@@ -439,6 +439,7 @@ class GPT2Tokenizer {
 class WhisperTokenizer:GPT2Tokenizer
 {
     // https://github.com/huggingface/transformers/pull/19921
+    // Tokens is Vocab +
     static let eotToken = 50257
     static let sotToken = 50258
     static let langToken = 50259
@@ -451,8 +452,26 @@ class WhisperTokenizer:GPT2Tokenizer
     static let notToken = 50363
     static let begToken = 50364
     
+    // https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/tokenizer.py#L279
+    static let eotString = "<|endoftranscript|>"
+    static let sotString = "<|startoftranscript|>"
+    static let languageStrings:[String] = WhisperTokenizer.LANGUAGES.map{ "|<" + $0 + ">|" }
+    static let translateString = "<|translate|>"
+    static let transcribeString = "<|transcribe|>"
+    static let startoflmString = "<|startoflm|>"
+    static let prevString = "<|startofprev|>"
+    static let noSpeechString = "<|nospeech|>"
+    static let noTimestampsString = "<|nosnotimestampspeech|>"
+
+
     static let LANGUAGES = ["en", "zh", "de", "es", "ru", "ko", "fr", "ja", "pt", "tr", "pl", "ca", "nl", "ar", "sv", "it", "id", "hi", "fi", "vi", "iw", "uk", "el", "ms", "cs", "ro", "da", "hu", "ta", "no", "th", "ur", "hr", "bg", "lt", "la", "mi", "ml", "cy", "sk", "te", "fa", "lv", "bn", "sr", "az", "sl", "kn", "et", "mk", "br", "eu", "is", "hy", "ne", "mn", "bs", "kk", "sq", "sw", "gl", "mr", "pa", "si", "km", "sn", "yo", "so", "af", "oc", "ka", "be", "tg", "sd", "gu", "am", "yi", "lo", "uz", "fo", "ht", "ps", "tk", "nn", "mt", "sa", "lb", "my", "bo", "tl", "mg", "as", "tt", "haw", "ln", "ha", "ba", "jw", "su"]
 
+    
+//    static let specialTokenStrings:[String] = [sotString].append(contentsOf:languageStrings).append(contentsOf:[translateString, transcribeString, startoflmString, prevString])
+                    
+    
+    
+    
     func tokenToMultiArray(token:Int) -> MLMultiArray
     {
         let array = try! MLMultiArray(shape: [1, 1], dataType: .int32)

@@ -87,14 +87,18 @@ public class MelSpectrogram
         self.stft = STFT(fftLength: numFFT, windowType: .hanningDenormalized, windowLength: numFFT, sampleCount: sampleCount, hopCount: hopCount, center: true, padding: .Reflect)
     }
 
+    // This method DOES NOT WORK
+    // I'm keeping it here because portions do work correcty, but our FFT / STFT implementation appears to be incorrect?
+    // See https://www.reddit.com/r/DSP/comments/10dpyzx/help_with_stft_log_mel_spectrogram/
+    
     func processData(audio: [Int16]) -> [Float]
     {
         //         Calculate STFT
         var (allSampleReal, allSampleImaginary) = self.stft.calculateSTFT(audio: audio)
        
-        // drop last so we get 3000
-        allSampleReal = Array(allSampleReal.prefix(upTo: 3000))
-        allSampleImaginary = Array(allSampleImaginary.prefix(upTo: 3000))
+        // drop the 3001'st column as per Python
+        allSampleReal = Array(allSampleReal.prefix(upTo: Whisper.kWhisperNumSamplesInMel)) // 3000
+        allSampleImaginary = Array(allSampleImaginary.prefix(upTo: Whisper.kWhisperNumSamplesInMel)) // 3000
 
         // Unroll matrices into flat arrays for vDSP
         var flattnedReal:[Double] = allSampleReal.flatMap { $0 }
@@ -108,13 +112,13 @@ public class MelSpectrogram
         // Take the magnitude squared of the matrix, which results in a Result flat array of 3000 x 200 of real floats
         // Then multiply it with our mel filter bank
         var magnitudes = [Double](repeating: 0, count: flattnedReal.count)
-        var melSpectroGram = [Double](repeating: 0, count: 80 * 3000)
+        var melSpectroGram = [Double](repeating: 0, count: Whisper.kWhisperNumMels * Whisper.kWhisperNumSamplesInMel) // 80 x 3000
         
         
         flattnedReal.withUnsafeMutableBytes { unsafeFlatReal in
             flattnedImaginary.withUnsafeMutableBytes { unsafeFlatImaginary in
                 
-                //                 We create a Split Complex representation of our flattened real and imaginary component
+                // We create a Split Complex representation of our flattened real and imaginary component
                 let complexMatrix = DSPDoubleSplitComplex(realp: unsafeFlatReal.bindMemory(to: Double.self).baseAddress!,
                                                           imagp: unsafeFlatImaginary.bindMemory(to: Double.self).baseAddress!)
                 
@@ -124,8 +128,8 @@ public class MelSpectrogram
 //                print("Swift 1 - magnitudes min     ", vDSP.minimum(magnitudes), "max", vDSP.maximum(magnitudes))
 //                print("Swift 1 - magnitudes min     ", vDSP.minimum(flattenedMagnitudes), "max", vDSP.maximum(flattenedMagnitudes))
                 
-                //                 transpose magnitudes from 3000 X 200, to 200 x 3000
-                vDSP_mtransD(magnitudes, 1, &magnitudes, 1, 201, 3000) // verified correct
+                // transpose magnitudes from 3000 X 201, to 201 x 3000
+                vDSP_mtransD(magnitudes, 1, &magnitudes, 1, 201, vDSP_Length(Whisper.kWhisperNumSamplesInMel)) // verified correct
                 
                 
                 // Step 5 & 6 (filters loaded earlier)
@@ -139,8 +143,8 @@ public class MelSpectrogram
                 // MATRIX B is TRANSPOSED to be 200 rows x 3000 columns
                 // MATRIX C melSpectroGram is 80 rows x 3000 columns
                 
-                let M: Int32 = 80 // number of rows in matrix A
-                let N: Int32 = 3000 // number of columns in matrix B
+                let M: Int32 = Int32(Whisper.kWhisperNumMels) // number of rows in matrix A
+                let N: Int32 = Int32(Whisper.kWhisperNumSamplesInMel) // number of columns in matrix B
                 let K: Int32 = 201 // number of columns in matrix A and number of rows in
                 
                 // matrix multiply magitude squared matrix with our filter bank
@@ -206,6 +210,7 @@ public class MelSpectrogram
         return  vDSP.doubleToFloat(melSpectroGram)
     }
 
+    // This method works, but doesnt use the vDSP as fully as possible.
     func processDataRosa(audio: [Int16]) -> [Float]
     {
         // COnvert to a normalized Float representation
@@ -215,7 +220,7 @@ public class MelSpectrogram
 
         // Modify the default spectrogram to produce magnitudes squared
         // Note, accelerated true produces incorrect results!
-        var spectrogram = audioFloat.stft(nFFT: 400, hopLength: 160, isAccelerated: false).map { $0.map { pow(sqrt(pow($0.real, 2.0) + pow($0.imagine, 2.0)), 2.0)  } }
+        var spectrogram = audioFloat.stft(nFFT: Whisper.kWhisperNumFFTs, hopLength:Whisper.kWhisperHopLength, isAccelerated: false).map { $0.map { pow(sqrt(pow($0.real, 2.0) + pow($0.imagine, 2.0)), 2.0)  } }
         
         // Remove the 3001st row.
         spectrogram = spectrogram.transposed
@@ -223,7 +228,7 @@ public class MelSpectrogram
         spectrogram = spectrogram.transposed
         
         // Calculate the spectrogram
-        let melBasis = [Double].createMelFilter(sampleRate: 16000, FTTCount: 400, melsCount: 80)
+        let melBasis = [Double].createMelFilter(sampleRate: Whisper.kWhisperSampleRate, FTTCount:Whisper.kWhisperNumFFTs, melsCount:Whisper.kWhisperNumMels)
         
         let melDouble = melBasis.dot(matrix: spectrogram)
         
