@@ -25,8 +25,8 @@ public class Whisper {
     static let kWhisperNumSamplesInMel:Int = 3000; // frames of Mel spectrograms
     
    
-    let decoderModel: decoder
-    let encoderModel: encoder
+    let decoderModel: decoder_base
+    let encoderModel: encoder_base
     let tokenizer = WhisperTokenizer()
     
     let mel:MelSpectrogram = MelSpectrogram(sampleCount: kWhisperNumSamplesInChunk, hopCount: kWhisperHopLength, melCount: kWhisperNumMels, numFFT: kWhisperNumFFTs)
@@ -41,8 +41,8 @@ public class Whisper {
         let config = MLModelConfiguration()
         config.computeUnits = .all
         
-        self.decoderModel = try decoder(configuration: config)
-        self.encoderModel = try encoder(configuration: config)
+        self.decoderModel = try decoder_base(configuration: config)
+        self.encoderModel = try encoder_base(configuration: config)
         
         self.accruedAudioSamples.reserveCapacity( Whisper.kWhisperNumSamplesInChunk )
     }
@@ -93,7 +93,7 @@ public class Whisper {
             }
         }
         
-        let encoded = try encoderModel.prediction(x_1:array).var_1373
+        let encoded = try encoderModel.prediction(logmel_data:array).var_719
         return encoded
 //        return array
     }
@@ -119,7 +119,7 @@ public class Whisper {
  
                 let tokensArray = self.tokenizer.tokensToMultiArray(tokens, dims: 2)
 
-                let decoded = try! decoderModel.prediction(token_data: tokensArray, audio_data: audioFeatures).var_2205
+                let decoded = try! decoderModel.prediction(token_data: tokensArray, audio_data: audioFeatures).var_1131
 
                 nextToken = self.tokenizer.nextTokenGreedy(decoded: decoded)
                 tokens.append(nextToken)
