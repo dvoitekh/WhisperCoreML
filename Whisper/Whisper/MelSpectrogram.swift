@@ -208,28 +208,29 @@ public class MelSpectrogram
 
     func processDataRosa(audio: [Int16]) -> [Float]
     {
+        // COnvert to a normalized Float representation
         var audioFloat:[Double] = [Double](repeating: 0, count: audio.count)
-        
         vDSP.convertElements(of: audio, to: &audioFloat)
         vDSP.divide(audioFloat, 32768.0, result: &audioFloat)
 
-        
-//        let spectrogram = self.stft.calculateSTFTRosa(audio:audio, nFFT: 400, hopLength: 160)
+        // Modify the default spectrogram to produce magnitudes squared
+        // Note, accelerated true produces incorrect results!
         var spectrogram = audioFloat.stft(nFFT: 400, hopLength: 160, isAccelerated: false).map { $0.map { pow(sqrt(pow($0.real, 2.0) + pow($0.imagine, 2.0)), 2.0)  } }
         
+        // Remove the 3001st row.
         spectrogram = spectrogram.transposed
-        
         spectrogram.removeLast()
-        
         spectrogram = spectrogram.transposed
         
+        // Calculate the spectrogram
         let melBasis = [Double].createMelFilter(sampleRate: 16000, FTTCount: 400, melsCount: 80)
         
         let melDouble = melBasis.dot(matrix: spectrogram)
         
         var melSpectroGram:[Double] = melDouble.flatMap( { $0 } )
         
-                
+        // Normalize the Mel Spectrogram into a Log Mel in the format Whisper expects:
+        
         print("Swift 2 - mel min            ", vDSP.minimum(melSpectroGram), "max", vDSP.maximum(melSpectroGram))
 
         // Step 7 - clamp / clip the min to 1e-10
@@ -240,7 +241,6 @@ public class MelSpectrogram
         // Step 7 - Take the log base 10 - vDSP_vdbcon and power:toDecibels seems to fuck things up here and isnt right, even though its what everyone else uses?
         vForce.log10(melSpectroGram, result: &melSpectroGram)
         print("Swift 4 - mel log min       ", vDSP.minimum(melSpectroGram), "max", vDSP.maximum(melSpectroGram))
-
 
         // Step 8 -
         // Clip to new max and updated min
@@ -253,10 +253,7 @@ public class MelSpectrogram
         vDSP.add(4.0, melSpectroGram, result: &melSpectroGram)
         vDSP.divide(melSpectroGram, 4.0, result: &melSpectroGram)
 
-
-
         print("Swift 6 - mel log norm min  ", vDSP.minimum(melSpectroGram), "max", vDSP.maximum(melSpectroGram))
-
 
         print("--------------")
 
