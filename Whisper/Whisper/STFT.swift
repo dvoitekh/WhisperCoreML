@@ -7,6 +7,7 @@
 
 import Foundation
 import Accelerate
+import RosaKit
 
 class STFT
 {
@@ -70,7 +71,7 @@ class STFT
     }
     
     /// Calculate STFT and return matrix of real and imaginary components calculated
-    public func calculateSTFT(audio:[Int16]) -> ([[Double]], [[Double]], [[Double]])
+    public func calculateSTFT(audio:[Int16]) -> ([[Double]], [[Double]])
     {
         // Step 1
         assert(self.sampleCount == audio.count)
@@ -110,11 +111,11 @@ class STFT
         // Split Complex arrays holding the FFT results
         var allSampleReal:[[Double]] = []
         var allSampleImaginary:[[Double]] = []
-        var allSampleMagnitudes:[[Double]] = []
+//        var allSampleMagnitudes:[[Double]] = []
 
-        // Step 2 - we need to create 3000 x 200 matrix of windowed FFTs
+        // Step 2 - we need to create 3001 x 201 matrix of windowed FFTs
         // Pytorch outputs complex numbers
-        for (m) in 0 ..< self.stftIterationCount
+        for (m) in 0 ... self.stftIterationCount
         {
             // Slice numFFTs every hop count (barf) and make a mel spectrum out of it
             // audioFrame ends up holding split complex numbers
@@ -126,29 +127,79 @@ class STFT
 
             assert(audioFrame.count == self.fftLength)
             
-            var (real, imaginary, magnitudes) = self.fft.forward(audioFrame)
+            var (real, imaginary, _) = self.fft.forward(audioFrame)
             
             // We divide our half our FFT output,
             // because the Pytorch `onesized` is true by default for real valued signals
             // See https://pytorch.org/docs/stable/generated/torch.stft.html
             
-            if (real.count == self.fftLength )
-            {
-                real = Array(real.prefix(upTo:1 + self.fftLength / 2))
-                imaginary = Array(imaginary.prefix(upTo:1 + self.fftLength / 2))
-                magnitudes = Array(magnitudes.prefix(upTo:1 + self.fftLength / 2))
+//            if (real.count == self.fftLength )
+//            {
+//                real = Array(real.prefix(upTo:1 + self.fftLength / 2))
+//                imaginary = Array(imaginary.prefix(upTo:1 + self.fftLength / 2))
+////                magnitudes = Array(magnitudes.prefix(upTo:1 + self.fftLength / 2))
+//
+//            }
+//
+//            assert(real.count == 1 + self.fft.numFFT / 2)
+//            assert(imaginary.count == 1 +  self.fft.numFFT / 2)
 
-            }
-            
-            assert(real.count == 1 + self.fft.numFFT / 2)
-            assert(imaginary.count == 1 +  self.fft.numFFT / 2)
+            real = Array(real[0 ..< 201])
+            imaginary = Array(imaginary[0 ..< 201])
 
             allSampleReal.append(real)
             allSampleImaginary.append(imaginary)
-            allSampleMagnitudes.append(magnitudes)
+//            allSampleMagnitudes.append(magnitudes)
         }
         
-        return (allSampleReal, allSampleImaginary, allSampleMagnitudes)
+        return (allSampleReal, allSampleImaginary)
     }
+    
+//    func calculateSTFTRosa(audio:[Int16], nFFT: Int = 256, hopLength: Int = 1024, isAccelerated: Bool = false) -> [[(real: Double, imagine: Double)]] {
+//        
+//        var audioFloat:[Double] = [Double](repeating: 0, count: audio.count)
+//        
+//        vDSP.convertElements(of: audio, to: &audioFloat)
+//
+//        if (self.center)
+//        {
+//            switch ( self.padding )
+//            {
+//            case .Reflect, .none:
+//                let reflectStart = audioFloat[0 ..< self.fftLength/2]
+//                let reflectEnd = audioFloat[audioFloat.count -  self.fftLength/2 ..< audioFloat.count]
+//                
+//                audioFloat.insert(contentsOf:reflectStart.reversed(), at: 0)
+//                audioFloat.append(contentsOf:reflectEnd.reversed())
+//            case .Zero:
+//                let zero:[Double] = [Double](repeating: 0, count: self.fftLength/2 )
+//                
+//                audioFloat.insert(contentsOf:zero, at: 0)
+//                audioFloat.append(contentsOf:zero)
+//            }
+//        }
+//        else
+//        {
+//            // Alternatively all at the end?
+//            audioFloat.append(contentsOf: [Double](repeating: 0, count: self.fftLength))
+//        }
+//        
+//        
+////        let FFTWindow = [Double].getHannWindow(frameLength: (nFFT)).map { [$0] }
+//        
+////        let FFTWWindow
+//        
+////        let centered = audioDouble.reflectPad(fftSize: nFFT)
+//        
+//        let yFrames = audioFloat.frame(frameLength: nFFT, hopLength: hopLength)
+//
+//        let matrix = FFTWindow.multiplyVector(matrix: yFrames)
+//                                        
+//        let rfftMatrix = isAccelerated ? matrix.acceleratedRFFT : matrix.rfft
+//        
+//        let result = rfftMatrix
+//        
+//        return result
+//    }
     
 }

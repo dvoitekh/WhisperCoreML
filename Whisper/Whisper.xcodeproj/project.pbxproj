@@ -20,6 +20,7 @@
 		1B58A618296E03FF006E0969 /* python_log_mel.raw in Resources */ = {isa = PBXBuildFile; fileRef = 1B58A617296E03FE006E0969 /* python_log_mel.raw */; };
 		1B58A61A2970C127006E0969 /* FFT.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B58A6192970C127006E0969 /* FFT.swift */; };
 		1B58A61C29733174006E0969 /* STFT.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B58A61B29733173006E0969 /* STFT.swift */; };
+		1B58A6382975C3B1006E0969 /* RosaKit in Frameworks */ = {isa = PBXBuildFile; productRef = 1B58A6372975C3B1006E0969 /* RosaKit */; };
 		1B6A59D929634F2A004C510D /* MelSpectrogram.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B6A59D829634F2A004C510D /* MelSpectrogram.swift */; };
 		1B6A59DC29635145004C510D /* decoder.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 1B6A59DA29635145004C510D /* decoder.mlpackage */; };
 		1B6A59DD29635145004C510D /* encoder.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 1B6A59DB29635145004C510D /* encoder.mlpackage */; };
@@ -62,6 +63,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1B58A6382975C3B1006E0969 /* RosaKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -146,6 +148,9 @@
 			dependencies = (
 			);
 			name = Whisper;
+			packageProductDependencies = (
+				1B58A6372975C3B1006E0969 /* RosaKit */,
+			);
 			productName = Whisper;
 			productReference = 01AF98F528E28BF2002DAC53 /* Whisper.app */;
 			productType = "com.apple.product-type.application";
@@ -174,6 +179,9 @@
 				Base,
 			);
 			mainGroup = 01AF98EC28E28BF2002DAC53;
+			packageReferences = (
+				1B58A6362975C3B1006E0969 /* XCRemoteSwiftPackageReference "RosaKit" */,
+			);
 			productRefGroup = 01AF98F628E28BF2002DAC53 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -446,6 +454,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		1B58A6362975C3B1006E0969 /* XCRemoteSwiftPackageReference "RosaKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/dhrebeniuk/RosaKit";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1B58A6372975C3B1006E0969 /* RosaKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1B58A6362975C3B1006E0969 /* XCRemoteSwiftPackageReference "RosaKit" */;
+			productName = RosaKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 01AF98ED28E28BF2002DAC53 /* Project object */;
 }

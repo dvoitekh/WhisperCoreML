@@ -1,0 +1,32 @@
+{
+  "pins" : [
+    {
+      "identity" : "plain-pocketfft",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/dhrebeniuk/plain-pocketfft.git",
+      "state" : {
+        "revision" : "b9633be41ad61e40a93f58abafed9fb5e281ed18",
+        "version" : "0.0.9"
+      }
+    },
+    {
+      "identity" : "pocketfft",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/dhrebeniuk/pocketfft.git",
+      "state" : {
+        "revision" : "f7f2ac6085d9123ab130bb8daebcc11acd72d52c",
+        "version" : "0.0.1"
+      }
+    },
+    {
+      "identity" : "rosakit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/dhrebeniuk/RosaKit",
+      "state" : {
+        "branch" : "main",
+        "revision" : "a00984a4c320cef88effa68574318ec34d9f165c"
+      }
+    }
+  ],
+  "version" : 2
+}
