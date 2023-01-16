@@ -102,8 +102,8 @@ public class MelSpectrogram
         
         let flattenedMelMatrix = self.melFilterMatrix.flatMap{ $0 }
         
-        print("Swift 0 - complex real min", vDSP.minimum(flattnedReal), "max", vDSP.maximum(flattnedReal))
-        print("Swift 0 - complex imag min", vDSP.minimum(flattnedImaginary), "max", vDSP.maximum(flattnedImaginary))
+//        print("Swift 0 - complex real min", vDSP.minimum(flattnedReal), "max", vDSP.maximum(flattnedReal))
+//        print("Swift 0 - complex imag min", vDSP.minimum(flattnedImaginary), "max", vDSP.maximum(flattnedImaginary))
         
         // Take the magnitude squared of the matrix, which results in a Result flat array of 3000 x 200 of real floats
         // Then multiply it with our mel filter bank
@@ -121,7 +121,7 @@ public class MelSpectrogram
                 vDSP.squareMagnitudes(complexMatrix, result: &magnitudes)
                 
                 
-                print("Swift 1 - magnitudes min     ", vDSP.minimum(magnitudes), "max", vDSP.maximum(magnitudes))
+//                print("Swift 1 - magnitudes min     ", vDSP.minimum(magnitudes), "max", vDSP.maximum(magnitudes))
 //                print("Swift 1 - magnitudes min     ", vDSP.minimum(flattenedMagnitudes), "max", vDSP.maximum(flattenedMagnitudes))
                 
                 //                 transpose magnitudes from 3000 X 200, to 200 x 3000
@@ -162,16 +162,16 @@ public class MelSpectrogram
                 
                 
                 
-                print("Swift 2 - mel min            ", vDSP.minimum(melSpectroGram), "max", vDSP.maximum(melSpectroGram))
+//                print("Swift 2 - mel min            ", vDSP.minimum(melSpectroGram), "max", vDSP.maximum(melSpectroGram))
                 
                 // Step 7 - clamp / clip the min to 1e-10
                 vDSP.threshold(melSpectroGram, to: 1e-10, with: .clampToThreshold, result: &melSpectroGram)
                 
-                print("Swift 3 - mel clip min       ", vDSP.minimum(melSpectroGram), "max", vDSP.maximum(melSpectroGram))
+//                print("Swift 3 - mel clip min       ", vDSP.minimum(melSpectroGram), "max", vDSP.maximum(melSpectroGram))
                 
                 // Step 7 - Take the log base 10 - vDSP_vdbcon and power:toDecibels seems to fuck things up here and isnt right, even though its what everyone else uses?
                 vForce.log10(melSpectroGram, result: &melSpectroGram)
-                print("Swift 4 - mel log min       ", vDSP.minimum(melSpectroGram), "max", vDSP.maximum(melSpectroGram))
+//                print("Swift 4 - mel log min       ", vDSP.minimum(melSpectroGram), "max", vDSP.maximum(melSpectroGram))
                 
                 
                 // Step 8 -
@@ -179,7 +179,7 @@ public class MelSpectrogram
                 let newMin = vDSP.maximum(melSpectroGram) - 8.0
                 vDSP.maximum(melSpectroGram, [Double](repeating: newMin, count: melSpectroGram.count), result: &melSpectroGram)
                 
-                print("Swift 5 - mel log min       ", vDSP.minimum(melSpectroGram), "max", vDSP.maximum(melSpectroGram))
+//                print("Swift 5 - mel log min       ", vDSP.minimum(melSpectroGram), "max", vDSP.maximum(melSpectroGram))
                 
                 // Step 9 - Add 4 and Divide by 4
                 vDSP.add(4.0, melSpectroGram, result: &melSpectroGram)
@@ -187,19 +187,19 @@ public class MelSpectrogram
                 
                 
                 
-                print("Swift 6 - mel log norm min  ", vDSP.minimum(melSpectroGram), "max", vDSP.maximum(melSpectroGram))
+//                print("Swift 6 - mel log norm min  ", vDSP.minimum(melSpectroGram), "max", vDSP.maximum(melSpectroGram))
                 
                 
-                print("--------------")
-
-                print("Torch 0 - complex real min -11.8792142868 max 12.0689258575")
-                print("Torch 0 - complex imag min -10.5751876831 max 11.5213479996")
-                print("Torch 1 - magnitudes min     0.0000000000 max 165.6671142578")
-                print("Torch 2 - mel min            0.0000000036 max 4.2800636292")
-                print("Torch 3 - mel clip min       0.0000000036 max 4.2800636292")
-                print("Torch 4 - mel log min       -8.4495277405 max 0.6314502358")
-                print("Torch 5 - mel log min       -7.3685498238 max 0.6314502358")
-                print("Torch 6 - mel log norm min  -0.8421374559 max 1.1578625441")
+//                print("--------------")
+//
+//                print("Torch 0 - complex real min -11.8792142868 max 12.0689258575")
+//                print("Torch 0 - complex imag min -10.5751876831 max 11.5213479996")
+//                print("Torch 1 - magnitudes min     0.0000000000 max 165.6671142578")
+//                print("Torch 2 - mel min            0.0000000036 max 4.2800636292")
+//                print("Torch 3 - mel clip min       0.0000000036 max 4.2800636292")
+//                print("Torch 4 - mel log min       -8.4495277405 max 0.6314502358")
+//                print("Torch 5 - mel log min       -7.3685498238 max 0.6314502358")
+//                print("Torch 6 - mel log norm min  -0.8421374559 max 1.1578625441")
             }
         }
         
@@ -231,40 +231,40 @@ public class MelSpectrogram
         
         // Normalize the Mel Spectrogram into a Log Mel in the format Whisper expects:
         
-        print("Swift 2 - mel min            ", vDSP.minimum(melSpectroGram), "max", vDSP.maximum(melSpectroGram))
+//        print("Swift 2 - mel min            ", vDSP.minimum(melSpectroGram), "max", vDSP.maximum(melSpectroGram))
 
         // Step 7 - clamp / clip the min to 1e-10
         vDSP.threshold(melSpectroGram, to: 1e-10, with: .clampToThreshold, result: &melSpectroGram)
 
-        print("Swift 3 - mel clip min       ", vDSP.minimum(melSpectroGram), "max", vDSP.maximum(melSpectroGram))
+//        print("Swift 3 - mel clip min       ", vDSP.minimum(melSpectroGram), "max", vDSP.maximum(melSpectroGram))
 
         // Step 7 - Take the log base 10 - vDSP_vdbcon and power:toDecibels seems to fuck things up here and isnt right, even though its what everyone else uses?
         vForce.log10(melSpectroGram, result: &melSpectroGram)
-        print("Swift 4 - mel log min       ", vDSP.minimum(melSpectroGram), "max", vDSP.maximum(melSpectroGram))
+//        print("Swift 4 - mel log min       ", vDSP.minimum(melSpectroGram), "max", vDSP.maximum(melSpectroGram))
 
         // Step 8 -
         // Clip to new max and updated min
         let newMin = vDSP.maximum(melSpectroGram) - 8.0
         vDSP.maximum(melSpectroGram, [Double](repeating: newMin, count: melSpectroGram.count), result: &melSpectroGram)
 
-        print("Swift 5 - mel log min       ", vDSP.minimum(melSpectroGram), "max", vDSP.maximum(melSpectroGram))
+//        print("Swift 5 - mel log min       ", vDSP.minimum(melSpectroGram), "max", vDSP.maximum(melSpectroGram))
 
         // Step 9 - Add 4 and Divide by 4
         vDSP.add(4.0, melSpectroGram, result: &melSpectroGram)
         vDSP.divide(melSpectroGram, 4.0, result: &melSpectroGram)
 
-        print("Swift 6 - mel log norm min  ", vDSP.minimum(melSpectroGram), "max", vDSP.maximum(melSpectroGram))
+//        print("Swift 6 - mel log norm min  ", vDSP.minimum(melSpectroGram), "max", vDSP.maximum(melSpectroGram))
 
-        print("--------------")
+//        print("--------------")
 
-        print("Torch 0 - complex real min -11.8792142868 max 12.0689258575")
-        print("Torch 0 - complex imag min -10.5751876831 max 11.5213479996")
-        print("Torch 1 - magnitudes min     0.0000000000 max 165.6671142578")
-        print("Torch 2 - mel min            0.0000000036 max 4.2800636292")
-        print("Torch 3 - mel clip min       0.0000000036 max 4.2800636292")
-        print("Torch 4 - mel log min       -8.4495277405 max 0.6314502358")
-        print("Torch 5 - mel log min       -7.3685498238 max 0.6314502358")
-        print("Torch 6 - mel log norm min  -0.8421374559 max 1.1578625441")
+//        print("Torch 0 - complex real min -11.8792142868 max 12.0689258575")
+//        print("Torch 0 - complex imag min -10.5751876831 max 11.5213479996")
+//        print("Torch 1 - magnitudes min     0.0000000000 max 165.6671142578")
+//        print("Torch 2 - mel min            0.0000000036 max 4.2800636292")
+//        print("Torch 3 - mel clip min       0.0000000036 max 4.2800636292")
+//        print("Torch 4 - mel log min       -8.4495277405 max 0.6314502358")
+//        print("Torch 5 - mel log min       -7.3685498238 max 0.6314502358")
+//        print("Torch 6 - mel log norm min  -0.8421374559 max 1.1578625441")
 
         return  vDSP.doubleToFloat(melSpectroGram)
     }

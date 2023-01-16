@@ -89,7 +89,9 @@ struct ContentView: View {
             do {
                 let start = Date().timeIntervalSince1970
                 
-                await whisper.predict(assetURL: url)
+                let transcription = await whisper.transcribe(assetURL: url)
+                
+                print(transcription)
                 
                 print(Date().timeIntervalSince1970 - start)
             } catch let error {

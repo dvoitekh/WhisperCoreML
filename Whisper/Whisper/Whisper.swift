@@ -25,6 +25,8 @@ public class Whisper {
     static let kWhisperNumSamplesInMel:Int = 3000; // frames of Mel spectrograms
     
    
+    var accruedTranscription:[String] = []
+    
     let decoderModel: decoder_base
     let encoderModel: encoder_base
     let tokenizer = WhisperTokenizer()
@@ -98,7 +100,7 @@ public class Whisper {
 //        return array
     }
     
-    func decode(audioFeatures: MLMultiArray) throws {
+    func decode(audioFeatures: MLMultiArray) throws -> String {
         
         // SOT Initialize sequence
         var tokens:[Int] = []
@@ -109,7 +111,7 @@ public class Whisper {
         tokens.append(WhisperTokenizer.sotToken)
         tokens.append(WhisperTokenizer.langToken)
         tokens.append(WhisperTokenizer.transcribeToken)
-        tokens.append(WhisperTokenizer.notToken)
+//        tokens.append(WhisperTokenizer.notToken)
 
         var nextToken = 0
 
@@ -133,6 +135,8 @@ public class Whisper {
         let transcription = self.tokenizer.decode(tokens: tokens)
 
         print(transcription)
+        
+        return transcription
     }
     
     
@@ -179,7 +183,9 @@ public class Whisper {
             {
                 do {
                     let encoded = try self.encode(audio: self.accruedAudioSamples)
-                    try self.decode(audioFeatures: encoded)
+                    let transcriptionForChunk:String = try self.decode(audioFeatures: encoded)
+
+                    self.accruedTranscription.append(transcriptionForChunk)
                 }
                 catch let error
                 {
@@ -200,7 +206,7 @@ public class Whisper {
     }
     
     
-    func predict(assetURL:URL) async
+    func transcribe(assetURL:URL) async -> String
     {
         let asset = AVURLAsset(url:assetURL)
         
@@ -211,7 +217,7 @@ public class Whisper {
             
             // Output SInt 16
             let audioOutputSettings = [ AVFormatIDKey : kAudioFormatLinearPCM,
-                                      AVSampleRateKey : 16000,
+                                      AVSampleRateKey : Whisper.kWhisperSampleRate,
                                 AVLinearPCMBitDepthKey: 16,
                                  AVNumberOfChannelsKey: 1,
                                 AVLinearPCMIsFloatKey : false,
@@ -253,14 +259,14 @@ public class Whisper {
                     {
                         // something went wrong
                         print(assetReader.error as Any)
-                        return
+                        return ""
                     }
                 }
                                         
                 self.accrueSamplesFromSampleBuffer(sampleBuffer: audioSampleBuffer)
                 
             }
-            
+                        
             let processingTime = NSDate.timeIntervalSinceReferenceDate - startTime
             
             print("Decode and Predict took", processingTime, "seconds")
@@ -270,6 +276,8 @@ public class Whisper {
             print("Movie is", assetDuration)
             print("Realtime Factor is", assetDuration / processingTime)
 
+            return self.accruedTranscription.joined(separator: " ")
+            
         }
         catch let error
         {
