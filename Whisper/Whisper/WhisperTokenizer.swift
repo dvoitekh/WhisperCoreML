@@ -321,8 +321,8 @@ let byteDecoder = Utils.invert(byteEncoder)
 
 class GPT2Tokenizer {
     let bpeRanks: Dictionary<BytePair, Int>
-    private let encoder: [String: Int]
-    private let decoder: [Int: String]
+    internal let encoder: [String: Int]
+    internal let decoder: [Int: String]
     
     init() {
         let url = Bundle.main.url(forResource: "multilingual-merges", withExtension: "txt")!
@@ -448,7 +448,7 @@ class WhisperTokenizer:GPT2Tokenizer
     static let translateToken = 50358
     static let transcribeToken = 50359
     static let prevToken = 50361
-    static let spolmToken = 50362 //?
+    static let solmToken = 50362
     static let notToken = 50363
     static let begToken = 50364
     
@@ -458,19 +458,33 @@ class WhisperTokenizer:GPT2Tokenizer
     static let languageStrings:[String] = WhisperTokenizer.LANGUAGES.map{ "|<" + $0 + ">|" }
     static let translateString = "<|translate|>"
     static let transcribeString = "<|transcribe|>"
-    static let startoflmString = "<|startoflm|>"
+    static let solmString = "<|startoflm|>"
     static let prevString = "<|startofprev|>"
     static let noSpeechString = "<|nospeech|>"
-    static let noTimestampsString = "<|nosnotimestampspeech|>"
-
+    static let noTimestampsString = "<|notimestamps|>"
 
     static let LANGUAGES = ["en", "zh", "de", "es", "ru", "ko", "fr", "ja", "pt", "tr", "pl", "ca", "nl", "ar", "sv", "it", "id", "hi", "fi", "vi", "iw", "uk", "el", "ms", "cs", "ro", "da", "hu", "ta", "no", "th", "ur", "hr", "bg", "lt", "la", "mi", "ml", "cy", "sk", "te", "fa", "lv", "bn", "sr", "az", "sl", "kn", "et", "mk", "br", "eu", "is", "hy", "ne", "mn", "bs", "kk", "sq", "sw", "gl", "mr", "pa", "si", "km", "sn", "yo", "so", "af", "oc", "ka", "be", "tg", "sd", "gu", "am", "yi", "lo", "uz", "fo", "ht", "ps", "tk", "nn", "mt", "sa", "lb", "my", "bo", "tl", "mg", "as", "tt", "haw", "ln", "ha", "ba", "jw", "su"]
 
-    
-//    static let specialTokenStrings:[String] = [sotString].append(contentsOf:languageStrings).append(contentsOf:[translateString, transcribeString, startoflmString, prevString])
-                    
-    
-    
+    func specialTokens() -> [Int : String]
+    {
+        let lastVocabIndex =  self.decoder.count;
+        
+        // Start from our decoder vocabularies last entry
+//        let lastVocab:[Int:String] =  self.decoder.endIndex
+//
+        var specialTokenArray:[String] = [Self.eotString, Self.sotString]
+        specialTokenArray.append(contentsOf:Self.languageStrings)
+        specialTokenArray.append(contentsOf:[Self.translateString, Self.transcribeString, Self.solmString, Self.prevString])
+  
+        let specialTokenDict = specialTokenArray.reduce(into: [Int : String]() ) { specialTokenDict, tokenString in
+            
+            let index = specialTokenArray.firstIndex(of: tokenString)!
+            
+            specialTokenDict[index + lastVocabIndex] = tokenString
+        }
+        
+        return specialTokenDict
+    }
     
     func tokenToMultiArray(token:Int) -> MLMultiArray
     {
