@@ -94,16 +94,10 @@
 			children = (
 				01AF992628E2D9B9002DAC53 /* Info.plist */,
 				01AF98F828E28BF2002DAC53 /* WhisperApp.swift */,
-				01AF991E28E2A97E002DAC53 /* Whisper.swift */,
-				1BFAC9DC2968F0A900A5A099 /* WhisperTokenizer.swift */,
-				1B58A6192970C127006E0969 /* FFT.swift */,
-				1B58A61B29733173006E0969 /* STFT.swift */,
-				1B6A59D829634F2A004C510D /* MelSpectrogram.swift */,
 				01AF992428E2D90F002DAC53 /* AudioRecorder.swift */,
 				1B6A59E02963A670004C510D /* AudioLoader.swift */,
 				01AF98FA28E28BF2002DAC53 /* ContentView.swift */,
-				1B58A60D296A3B40006E0969 /* Math.swift */,
-				1B58A60F296A3BAB006E0969 /* MLMultiArray+Utils.swift */,
+				1B03910829788B35007E945E /* Whisper */,
 				1B58A6392975F07A006E0969 /* decoder_base.mlpackage */,
 				1B03910629760795007E945E /* encoder_base.mlpackage */,
 				1B6A59DA29635145004C510D /* decoder.mlpackage */,
@@ -134,6 +128,20 @@
 				01AF990928E28C2E002DAC53 /* libresolv.tbd */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		1B03910829788B35007E945E /* Whisper */ = {
+			isa = PBXGroup;
+			children = (
+				01AF991E28E2A97E002DAC53 /* Whisper.swift */,
+				1BFAC9DC2968F0A900A5A099 /* WhisperTokenizer.swift */,
+				1B58A6192970C127006E0969 /* FFT.swift */,
+				1B58A61B29733173006E0969 /* STFT.swift */,
+				1B6A59D829634F2A004C510D /* MelSpectrogram.swift */,
+				1B58A60F296A3BAB006E0969 /* MLMultiArray+Utils.swift */,
+				1B58A60D296A3B40006E0969 /* Math.swift */,
+			);
+			path = Whisper;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

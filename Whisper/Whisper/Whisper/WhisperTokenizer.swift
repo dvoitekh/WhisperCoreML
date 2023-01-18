@@ -480,7 +480,7 @@ class WhisperTokenizer:GPT2Tokenizer
     
     func timestampBeginToken() -> Int
     {
-        return Self.begToken + 1
+        return Self.begToken
     }
     
     // MARK: - Helper Methods
