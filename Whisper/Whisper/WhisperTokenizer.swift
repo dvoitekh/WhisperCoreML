@@ -465,7 +465,27 @@ class WhisperTokenizer:GPT2Tokenizer
 
     static let LANGUAGES = ["en", "zh", "de", "es", "ru", "ko", "fr", "ja", "pt", "tr", "pl", "ca", "nl", "ar", "sv", "it", "id", "hi", "fi", "vi", "iw", "uk", "el", "ms", "cs", "ro", "da", "hu", "ta", "no", "th", "ur", "hr", "bg", "lt", "la", "mi", "ml", "cy", "sk", "te", "fa", "lv", "bn", "sr", "az", "sl", "kn", "et", "mk", "br", "eu", "is", "hy", "ne", "mn", "bs", "kk", "sq", "sw", "gl", "mr", "pa", "si", "km", "sn", "yo", "so", "af", "oc", "ka", "be", "tg", "sd", "gu", "am", "yi", "lo", "uz", "fo", "ht", "ps", "tk", "nn", "mt", "sa", "lb", "my", "bo", "tl", "mg", "as", "tt", "haw", "ln", "ha", "ba", "jw", "su"]
 
-    func specialTokens() -> [Int : String]
+    
+    var specialTokens:[Int:String]!
+    
+    override init()
+    {
+        super.init()
+
+        self.specialTokens = self.generateSpecialTokenDict()
+        
+    }
+    
+    // MARK: - Token Accessors
+    
+    func timestampBeginToken() -> Int
+    {
+        return Self.begToken + 1
+    }
+    
+    // MARK: - Helper Methods
+    
+    func generateSpecialTokenDict() -> [Int : String]
     {
         let lastVocabIndex =  self.decoder.count;
         
@@ -497,7 +517,8 @@ class WhisperTokenizer:GPT2Tokenizer
         return array
     }
     
-    func tokensToMultiArray(_ tokens: [Int], dims: Int = 2) -> MLMultiArray {
+    func tokensToMultiArray(_ tokens: [Int], dims: Int = 2) -> MLMultiArray
+    {
         var shape = Array(repeating: 1, count: dims)
         shape[shape.count - 1] = tokens.count
         /// Examples:
@@ -546,13 +567,10 @@ class WhisperTokenizer:GPT2Tokenizer
    
     func predictLangToken(decoded:MLMultiArray) -> Int
     {
-        let (token, _) = self.simdMaxIndexForRange(startToken: Self.langToken, endToken: WhisperTokenizer.sotToken, decoded: decoded)
+        let (token, _) = self.simdMaxIndexForRange(startToken: Self.langToken,
+                                                   endToken: WhisperTokenizer.sotToken,
+                                                   decoded: decoded)
         return token
-
-//        let confidence = (50259...50357).map { decoded[$0].floatValue }
-//        let (langIdx, _) = confidence.enumerated().max { $0.element < $1.element }!
-//
-//        return langIdxpo c
         
     }
     
@@ -566,19 +584,60 @@ class WhisperTokenizer:GPT2Tokenizer
         
         let (token, _) = self.simdMaxIndexForRange(startToken: 0, endToken: WhisperTokenizer.sotToken, decoded: decoded)
         return token
-
-//        let confidence = (0...Self.eotToken).map {decoded[$0].floatValue }
-//
-//        let (tokenIdx, _) = confidence.enumerated().max { $0.element < $1.element }!
-//        return tokenIdx
     }
     
-    override func decode(tokens: [Int]) -> String {
-        
+    override func decode(tokens:[Int]) -> String
+    {
         // We need a method to not let our custom tokens hit the vocab
         // We also likely need to match some special processing done
         let pruned_tokens = tokens.filter{ $0 < WhisperTokenizer.eotToken}
         
         return  super.decode(tokens: pruned_tokens)
+    }
+    
+    // Our token can be decoded by our standard GPT2 vocab
+    func tokenIsVocab(token:Int) -> Bool
+    {
+        return token < self.decoder.count
+    }
+    
+    func tokenIsTimestamp(token:Int) -> Bool
+    {
+        return token > (self.decoder.count + self.specialTokens.count - 1)
+    }
+    
+    // https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/tokenizer.py#L143
+    // Timestamp tokens are above the special tokens' id range and are ignored by `decode()`.
+    // This method decodes given tokens with timestamps tokens annotated, e.g. "<|1.08|>".
+    func decodeWithTimestamps(tokens:[Int]) -> String
+    {
+        let timeStampOutput:[String] = [String]()
+        var tokensForDecode:[Int] = [Int]()
+        
+        for (token) in tokens
+        {
+            let isVocabtoken = self.tokenIsVocab(token: token)
+            
+            if (isVocabtoken)
+            {
+                tokensForDecode.append(token)
+            }
+            else
+            {
+                let isTimeStamp = self.tokenIsTimestamp(token: token)
+                
+                if (isTimeStamp)
+                {
+                    let timestampValue:Float = 0.02 * Float(token - self.timestampBeginToken())
+                    var timestamp = String(format:"<| %.2f |>", timestampValue)
+                 
+                    print(timestamp)
+                }
+            }
+        }
+        
+        return self.decode(tokens: tokensForDecode)
+        
+        
     }
 }

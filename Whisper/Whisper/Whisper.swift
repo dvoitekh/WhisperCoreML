@@ -11,6 +11,14 @@ import AVFoundation
 import Accelerate
 import RosaKit
 
+// https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/transcribe.py#L153
+struct WhisperSegment {
+    var id:Int = 0
+    var seek:Int = 0
+    var tokens:[Int] = []
+}
+
+
 public class Whisper {
     
     // hard-coded audio hyperparameters
@@ -107,11 +115,14 @@ public class Whisper {
 
         // create sot sequence
         // https://github.com/openai/whisper/blob/main/whisper/tokenizer.py#L325
-        // https://github.com/huggingface/transformers/blob/main/tests/models/whisper/test_tokenization_whisper.py
+//         https://github.com/huggingface/transformers/blob/main/tests/models/whisper/test_tokenization_whisper.py
         tokens.append(WhisperTokenizer.sotToken)
         tokens.append(WhisperTokenizer.langToken)
         tokens.append(WhisperTokenizer.transcribeToken)
-//        tokens.append(WhisperTokenizer.notToken)
+        
+        // Timestamps or no time stamps
+        //        tokens.append(WhisperTokenizer.notToken)
+        tokens.append(self.tokenizer.timestampBeginToken())
 
         var nextToken = 0
 
@@ -126,13 +137,13 @@ public class Whisper {
                 nextToken = self.tokenizer.nextTokenGreedy(decoded: decoded)
                 tokens.append(nextToken)
 
-//                let transcription = self.tokenizer.decode(tokens: tokens)
-//
-//                print(transcription)
+                let transcription = self.tokenizer.decode(tokens: tokens)
+
+                print(transcription)
             }
         }
 
-        let transcription = self.tokenizer.decode(tokens: tokens)
+        let transcription = self.tokenizer.decodeWithTimestamps(tokens: tokens)
 
         print(transcription)
         
@@ -208,6 +219,7 @@ public class Whisper {
     
     func transcribe(assetURL:URL) async -> String
     {
+        
         let asset = AVURLAsset(url:assetURL)
         
         do {
