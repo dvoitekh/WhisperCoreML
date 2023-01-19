@@ -86,22 +86,14 @@ struct ContentView: View {
     func getAudioPredict(url:URL) {
      
         Task {
-            do {
-                let start = Date().timeIntervalSince1970
-                
-                var options:Whisper.WhisperOptions = Whisper.WhisperOptions(task: .Transcribe,
-                                                                            format: .Text)
-                
-                whisper.startWhisperSession(options: options)
-                
-                let transcription = await whisper.transcribe(assetURL: url)
-                
-                print(transcription)
-                
-                print(Date().timeIntervalSince1970 - start)
-            } catch let error {
-                fatalError("Couldn't predict. Error: \(error)")
-            }
+            let start = Date().timeIntervalSince1970
+            
+            var options:Whisper.WhisperOptions = Whisper.WhisperOptions(task: .Transcribe,
+                                                                        format: .Text)
+            
+            let transcription = await whisper.transcribe(assetURL: url, options: options)
+            
+            print(transcription)
         }
     }
 }

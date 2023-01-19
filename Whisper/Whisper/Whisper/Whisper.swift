@@ -211,7 +211,6 @@ public class Whisper {
     // this function accrues
     func accrueSamplesFromSampleBuffer(sampleBuffer:CMSampleBuffer)
     {
-        
         var audioBufferListSize:Int = 0
         
         CMSampleBufferGetAudioBufferListWithRetainedBlockBuffer(sampleBuffer, bufferListSizeNeededOut: &audioBufferListSize, bufferListOut: nil, bufferListSize:0, blockBufferAllocator: kCFAllocatorNull, blockBufferMemoryAllocator: kCFAllocatorNull, flags: kCMSampleBufferFlag_AudioBufferList_Assure16ByteAlignment, blockBufferOut: nil)
@@ -268,8 +267,10 @@ public class Whisper {
 
     }
         
-    func transcribe(assetURL:URL) async -> String
+    func transcribe(assetURL:URL, options:WhisperOptions) async -> String
     {
+        self.startWhisperSession(options: options)
+        
         let asset = AVURLAsset(url:assetURL)
         
         do {
