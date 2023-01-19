@@ -15,6 +15,7 @@ import RosaKit
 
 public class Whisper {
     
+    // MARK: Public Constants Enums and Structs
     // hard-coded audio hyperparameters
     static let kWhisperSampleRate:Int = 16000;
     static let kWhisperNumFFTs:Int = 400;
@@ -33,52 +34,136 @@ public class Whisper {
         case Translate
     }
     
-    // Transcript format - this is the string format of the returned transcript or translation task.
+    /// Transcript format - this is the string format of the returned transcript or translation task.
     enum WhisperTranscriptFormat
     {
-        case Text // Text only, for Transcription and Translate
-        case TextAndTimestamps // Transcription only
-        case VTT // Soon Transcription only
-        case SRT // Soon Transcription only
+        /// Output text only - Transcription or Translation
+        case Text
+        /// Output text with timestamps - suitable for Transcription only
+        case TextAndTimestamps
+        /// Soon - Transcript as VTT formatted text
+        case VTT
+        /// Soon - Transcript as SRT formatted text
+        case SRT
     }
     
-    // Options to initialize a session with a task, language,
+    /// Options to initialize a session with a task, language,
+    /// See https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/transcribe.py#L19
     struct WhisperOptions
     {
         var task:WhisperTask!
         var format:WhisperTranscriptFormat!
         
-        // Todo:
-        // tempSchedule:[Int]
-        // noSpeechTreshold
-        //
+        var verbose = false
+        
+        // Below are WIP
+
+        /// Temperature for sampling. It can be a tuple of temperatures, which will be successfully used
+        /// upon failures according to either `compression_ratio_threshold` or `logprob_threshold`.
+        var temperature:[Float] = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+        
+        /// If the gzip compression ratio is above this value, treat as failed
+        var compressionRatioTresh = 2.4
+        /// If the average log probability over sampled tokens is below this value, treat as failed
+        var logProbThresh = -1.0
+        /// If the no_speech probability is higher than this value AND the average log probability
+        /// over sampled tokens is below `logprob_threshold`, consider the segment as silent
+        var noSpeechThresh = 0.6
+        
+        /// if True, the previous output of the model is provided as a prompt for the next window;
+        /// disabling may make the text inconsistent across windows, but the model becomes less prone to
+        /// getting stuck in a failure loop, such as repetition looping or timestamps going out of sync.
+        var conditionOnPrevText = true
     }
 
-    /// WhisperSegment internal state tracking for our Whisper session
-    // Inspired by https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/transcribe.py#L153
-    struct WhisperSegment
+    // MARK: Private Constants Enums and Structs
+    
+    // All of these are major WIP
+    
+    // WhisperSegment internal state tracking for our Whisper session
+    // See https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/transcribe.py#L153
+    private struct WhisperSegment
     {
-        var id:Int
-        var seek:Int
+        var id:Int!
+        var seek:Int!
         
         // Segment times in rational time base units
-        // Time base is in standard 600 units and isnt in the A
-        var startTime:CMTime
-        var endTime:CMTime
+        // Time base is in standard 600 units
+        var startTime:CMTime!
+        var endTime:CMTime!
         
-        // Tokens predicted for this session
-        var tokens:[Int]
-        // Text resultign from decoded tokens
-        var decodedText:String
-        
+        // Tokens predicted for this segment
+        var textTokens:[Int]!
+        // Text resulting from decoded tokens
+        var decodedText:String!
+
         // Todo:
-        // temperature
-        // avgLogProb
-        // compressionRatio
-        // noSpeechProb
+        var temperature:Float!
+        var avgLogProb:Float!
+        var compressionRatio:Float!
+        var noSpeechProb:Float!
     }
     
-    // MARK:
+    // Vended by the decode method and used internally
+    // See https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/decoding.py
+    private struct WhisperDecodingOptions
+    {
+        var task:WhisperTask
+        var languageCode:String?
+        
+        // Sampling Related Options
+        
+        var temperature:Float = 0.0
+        // Maximum number of tokens to sample
+        var maxSampleLen:Int?
+        // Number of independent samples to collect, when t > 0
+        var bestOf:Int?
+        // number of beams in beam search, when t == 0
+        var beamSize:Int?
+        // patience in beam search (https://arxiv.org/abs/2204.05424)
+        var parience:Float?
+        
+        // Options for ranking generations (either beams or best-of-N samples)
+        
+        // "alpha" in Google NMT, None defaults to length norm
+        var lengthPenalty:Float?
+        
+        // Prompt, prefix, and token suppression
+        
+        // Text or tokens for the previous context
+        var prompt:String?
+        var promptTokens:[Int]?
+        // text or tokens to prefix the current context
+        var prefix:String?
+        var prefixTokens:[Int]?
+        // this will suppress blank outputs
+        var suppressBlank:Bool = true
+        // list of tokens ids (or comma-separated token ids) to suppress
+        // nil will suppress a set of symbols as defined in `tokenizer.non_speech_tokens()`
+        // and empty array will do no suppression
+        var suppresTokens:[Int]?
+        
+        // timestamp sampling options
+        var withoutTimestamps:Bool = false
+        var maxInitialTimestampL:Float = 1.0
+    }
+    
+    // https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/decoding.py#L104
+    private struct WhisperDecodingResult
+    {
+        var tokens:[Int]
+        var text:String = ""
+
+        var languageCode:String?
+        var langProbs:[String:Float]?
+        
+        var avgLogProbs:Float = Float.nan
+        var noSpeechProbs:Float = Float.nan
+        var temperature:Float = Float.nan
+        var compressionRatio:Float = Float.nan
+    }
+    
+    // MARK: Whisper Properties
        
     let decoderModel: decoder_base
     let encoderModel: encoder_base
@@ -93,11 +178,11 @@ public class Whisper {
     var sessionOptions:WhisperOptions!
 
     
-    var sessionAccruedAudioSamples:[Int16] = []
-    var sessionNumAccruedAudioSamples:Int = 0
-    var sessionTranscription:[String] = []
+    private var sessionAccruedAudioSamples:[Int16] = []
+    private var sessionNumAccruedAudioSamples:Int = 0
+    private var sessionTranscription:[String] = []
 
-    var sessionSegments:[WhisperSegment] = []
+    private var sessionSegments:[WhisperSegment] = []
     
     init() throws {
         let config = MLModelConfiguration()
@@ -147,8 +232,8 @@ public class Whisper {
         let samplesToAccrue = min(numAvailableSamples, remainingSampleCount);
         
         let remainingCurrentSamplesInBuffer = numAvailableSamples - samplesToAccrue;
-        
-//        print("numAvailableSamples", numAvailableSamples, "samplesToAccrue", samplesToAccrue, "remainingSampleCount", remainingSampleCount)
+
+    //        print("numAvailableSamples", numAvailableSamples, "samplesToAccrue", samplesToAccrue, "remainingSampleCount", remainingSampleCount)
         
         let unsafeAudioBufferList = UnsafeMutableAudioBufferListPointer(&audioBufferList)
         
@@ -164,16 +249,8 @@ public class Whisper {
             
             if (self.sessionAccruedAudioSamples.count == Whisper.kWhisperNumSamplesInChunk)
             {
-                do {
-                    let encoded = try self.encode(audio: self.sessionAccruedAudioSamples)
-                    let transcriptionForChunk:String = try self.decode(audioFeatures: encoded)
-
-                    self.sessionTranscription.append(transcriptionForChunk)
-                }
-                catch let error
-                {
-                    
-                }
+                self.mainDeccodeLogicFromTranscribe(audio: self.sessionAccruedAudioSamples)
+                
                 self.sessionAccruedAudioSamples = []
                 self.sessionNumAccruedAudioSamples = 0
             }
@@ -190,11 +267,9 @@ public class Whisper {
         }
 
     }
-    
-    
+        
     func transcribe(assetURL:URL) async -> String
     {
-        
         let asset = AVURLAsset(url:assetURL)
         
         do {
@@ -325,10 +400,11 @@ public class Whisper {
 //        return array
     }
     
-    private func decode(audioFeatures: MLMultiArray) throws -> String {
+    private func decode(audioFeatures: MLMultiArray, decodingOptions:WhisperDecodingOptions) throws -> Whisper.WhisperDecodingResult {
         
         // SOT Initialize sequence
         var tokens:[Int] = []
+        var timestampTokens:[Int] = []
 
         // create sot sequence - multilingual model always needs a task and
         // https://github.com/openai/whisper/blob/main/whisper/tokenizer.py#L325
@@ -342,20 +418,10 @@ public class Whisper {
         {
             tokens.append(WhisperTokenizer.notToken)
         }
-        
-        // Today, we dont support audio frames other than the full 3000 Mel count
-        // So seek is count of a mel chunk (3000) * hop length / sample rate
-        // See : for reference https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/transcribe.py#L176
-        let segmentFrameCount = Whisper.kWhisperNumSamplesInMel
-        
-        let seek = self.sessionSegments.count * segmentFrameCount
-        
-        let timestampOffset = Float64(seek * Whisper.kWhisperHopLength / Whisper.kWhisperSampleRate)
-        let segmentDuration =  Float64(segmentFrameCount * Whisper.kWhisperHopLength / Whisper.kWhisperSampleRate)
-        
-        print("segment start, segment duration", timestampOffset, segmentDuration)
+                
         
         var nextToken = 0
+        var nextTSToken = WhisperTokenizer.begToken
 
         while ( nextToken != WhisperTokenizer.eotToken )
         {
@@ -365,32 +431,25 @@ public class Whisper {
 
                 let decoded = try! decoderModel.prediction(token_data: tokensArray, audio_data: audioFeatures).var_1131
 
-                nextToken = self.tokenizer.nextTokenGreedy(decoded: decoded)
+                let (textToken, tsToken) = self.tokenizer.nextTokenGreedy(decoded: decoded)
+
+                nextToken = textToken
+                nextTSToken = tsToken
+
+                timestampTokens.append(nextTSToken)
                 tokens.append(nextToken)
-                print(nextToken)
-//                let transcription = self.tokenizer.decode(tokens: tokens)
-//
+
+                // Verbose debugging as we iterate
+//                let transcription = self.tokenizer.decode(tokens: tokens)//
 //                print(transcription)
             }
         }
 
+        // TODO: Implement calculation of other decodingResult requirements
+        var decodingResult = WhisperDecodingResult(tokens: tokens, text: self.tokenizer.decode(tokens: tokens))
         
-        let transcription = self.tokenizer.decodeWithTimestamps(tokens: tokens)
-
-        let idForSegment = self.sessionSegments.count
-        
-        let currentSegment = Whisper.WhisperSegment(id: idForSegment,
-                                                    seek: seek,
-                                                    startTime: CMTimeMakeWithSeconds(timestampOffset, preferredTimescale: 600),
-                                                    endTime: CMTimeMakeWithSeconds(segmentDuration, preferredTimescale: 600),
-                                                    tokens: tokens,
-                                                    decodedText: transcription)
-
-        self.sessionSegments.append(currentSegment)
-        
-        print(transcription)
-        
-        return transcription
+            
+        return decodingResult
     }
     
     private func resetState()
@@ -399,6 +458,62 @@ public class Whisper {
         self.sessionSegments = []
         self.sessionAccruedAudioSamples = []
         self.sessionNumAccruedAudioSamples = 0
+
+    }
+    
+    
+    // https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/transcribe.py#L102
+    private func decodeWithFallback(audio:[Int16]) -> WhisperDecodingResult?
+    {
+        do {
+            let audioFeatures = try self.encode(audio: audio)
+            
+            let decodingOptions = WhisperDecodingOptions(task: self.sessionOptions.task)
+            
+            // TODO: Add Temperature shit and options from DecodeWithFallback
+            
+            let decodeResult:WhisperDecodingResult = try self.decode(audioFeatures: audioFeatures,
+                                                                     decodingOptions: decodingOptions)
+            
+
+            return decodeResult
+        }
+        catch let error
+        {
+            return nil
+        }
+    }
+    
+    // https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/transcribe.py#L175
+    private func mainDeccodeLogicFromTranscribe(audio:[Int16])
+    {
+        
+        // Timestamp shit
+
+        // Today, we dont support audio frames other than the full 3000 Mel count
+        // So seek is count of a mel chunk (3000) * hop length / sample rate
+        // See : for reference https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/transcribe.py#L176
+        let idForSegment = self.sessionSegments.count
+        let segmentFrameCount = Whisper.kWhisperNumSamplesInMel
+        let seek = self.sessionSegments.count * segmentFrameCount
+        
+        let timestampOffset = Float64(seek * Whisper.kWhisperHopLength / Whisper.kWhisperSampleRate)
+        let segmentDuration =  Float64(segmentFrameCount * Whisper.kWhisperHopLength / Whisper.kWhisperSampleRate)
+        
+        print("segment start, segment duration", timestampOffset, segmentDuration)
+
+        if let result:WhisperDecodingResult = self.decodeWithFallback(audio: audio)
+        {
+            let currentSegment = Whisper.WhisperSegment(id: idForSegment,
+                                                        seek: seek,
+                                                        startTime: CMTimeMakeWithSeconds(timestampOffset, preferredTimescale: 600),
+                                                        endTime: CMTimeMakeWithSeconds(segmentDuration, preferredTimescale: 600),
+                                                        textTokens: result.tokens,
+                                                        decodedText: result.text)
+            
+            self.sessionSegments.append(currentSegment)
+            
+        }
 
     }
     

@@ -464,7 +464,6 @@ class WhisperTokenizer:GPT2Tokenizer
     static let noTimestampsString = "<|notimestamps|>"
 
     static let LANGUAGES = ["en", "zh", "de", "es", "ru", "ko", "fr", "ja", "pt", "tr", "pl", "ca", "nl", "ar", "sv", "it", "id", "hi", "fi", "vi", "iw", "uk", "el", "ms", "cs", "ro", "da", "hu", "ta", "no", "th", "ur", "hr", "bg", "lt", "la", "mi", "ml", "cy", "sk", "te", "fa", "lv", "bn", "sr", "az", "sl", "kn", "et", "mk", "br", "eu", "is", "hy", "ne", "mn", "bs", "kk", "sq", "sw", "gl", "mr", "pa", "si", "km", "sn", "yo", "so", "af", "oc", "ka", "be", "tg", "sd", "gu", "am", "yi", "lo", "uz", "fo", "ht", "ps", "tk", "nn", "mt", "sa", "lb", "my", "bo", "tl", "mg", "as", "tt", "haw", "ln", "ha", "ba", "jw", "su"]
-
     
     var specialTokens:[Int:String]!
     
@@ -533,7 +532,6 @@ class WhisperTokenizer:GPT2Tokenizer
         return o
     }
 
-
     func simdMaxIndexForRange(startToken:Int, endToken:Int, decoded:MLMultiArray) -> (Int, Float)
     {
         // we need to look at the shape, and extract the latest 1 x 51865 logits.
@@ -552,7 +550,6 @@ class WhisperTokenizer:GPT2Tokenizer
         // This is slow, and should be optimized via raw pointer access
         var confidence:[Float] = (startToken..<endToken).map {
             decoded[offsetIntoLogits + $0].floatValue
-            
         }
 
         confidence = Math.softmax(confidence)
@@ -571,7 +568,6 @@ class WhisperTokenizer:GPT2Tokenizer
                                                    endToken: WhisperTokenizer.sotToken,
                                                    decoded: decoded)
         return token
-        
     }
     
     func langFromToken(token:Int) -> String
@@ -579,11 +575,16 @@ class WhisperTokenizer:GPT2Tokenizer
         return Self.LANGUAGES[token]
     }
     
-    func nextTokenGreedy(decoded:MLMultiArray) -> Int
+    func nextTokenGreedy(decoded:MLMultiArray) -> (Int, Int)
     {
         
         let (token, _) = self.simdMaxIndexForRange(startToken: 0, endToken: WhisperTokenizer.sotToken, decoded: decoded)
-        return token
+
+        let (timestamp_token, _) = self.simdMaxIndexForRange(startToken: WhisperTokenizer.begToken, endToken:Int(truncating: decoded.shape[2]), decoded: decoded)
+
+//        print(timestamp_token)
+
+        return (token, timestamp_token)
     }
     
     override func decode(tokens:[Int]) -> String
@@ -609,34 +610,20 @@ class WhisperTokenizer:GPT2Tokenizer
     // https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/tokenizer.py#L143
     // Timestamp tokens are above the special tokens' id range and are ignored by `decode()`.
     // This method decodes given tokens with timestamps tokens annotated, e.g. "<|1.08|>".
-    func decodeWithTimestamps(tokens:[Int]) -> String
+    func decodeWithTimestamps(tokens:[Int], timestampTokens:[Int]) -> String
     {
-        let timeStampOutput:[String] = [String]()
-        var tokensForDecode:[Int] = [Int]()
+//        let timeStampOutput:[String] = [String]()
+//        var tokensForDecode:[Int] = [Int]()
         
-        for (token) in tokens
+        for (token) in timestampTokens
         {
-            let isVocabtoken = self.tokenIsVocab(token: token)
+            let timestampValue:Float = 0.02 * Float(token - self.timestampBeginToken())
+            let timestamp = String(format:"<| %.2f |>", timestampValue)
             
-            if (isVocabtoken)
-            {
-                tokensForDecode.append(token)
-            }
-            else
-            {
-                let isTimeStamp = self.tokenIsTimestamp(token: token)
-                
-                if (isTimeStamp)
-                {
-                    let timestampValue:Float = 0.02 * Float(token - self.timestampBeginToken())
-                    var timestamp = String(format:"<| %.2f |>", timestampValue)
-                 
-                    print(timestamp)
-                }
-            }
+            print(timestamp)
         }
         
-        return self.decode(tokens: tokensForDecode)
+        return self.decode(tokens: tokens)
         
         
     }
