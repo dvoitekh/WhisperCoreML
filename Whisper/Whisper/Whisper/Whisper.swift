@@ -60,15 +60,15 @@ public class Whisper {
 
         /// Temperature for sampling. It can be a tuple of temperatures, which will be successfully used
         /// upon failures according to either `compression_ratio_threshold` or `logprob_threshold`.
-        var temperature:[Float] = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+        var temperatureSchedule:[Float] = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
         
         /// If the gzip compression ratio is above this value, treat as failed
-        var compressionRatioTresh = 2.4
+        var compressionRatioTresh:Float = 2.4
         /// If the average log probability over sampled tokens is below this value, treat as failed
-        var logProbThresh = -1.0
+        var logProbThresh:Float = -1.0
         /// If the no_speech probability is higher than this value AND the average log probability
         /// over sampled tokens is below `logprob_threshold`, consider the segment as silent
-        var noSpeechThresh = 0.6
+        var noSpeechThresh:Float = 0.6
         
         /// if True, the previous output of the model is provided as a prompt for the next window;
         /// disabling may make the text inconsistent across windows, but the model becomes less prone to
@@ -111,6 +111,13 @@ public class Whisper {
         var task:WhisperTask
         var languageCode:String?
         
+        // FYI Semantics from Python are these values can be
+        // None
+        // Zero
+        // Some value
+        // each has specific meaning, specifically None.
+        // We treat optional / nil as none here.
+        
         // Sampling Related Options
         
         var temperature:Float = 0.0
@@ -121,7 +128,7 @@ public class Whisper {
         // number of beams in beam search, when t == 0
         var beamSize:Int?
         // patience in beam search (https://arxiv.org/abs/2204.05424)
-        var parience:Float?
+        var patience:Float?
         
         // Options for ranking generations (either beams or best-of-N samples)
         
@@ -469,14 +476,54 @@ public class Whisper {
         do {
             let audioFeatures = try self.encode(audio: audio)
             
-            let decodingOptions = WhisperDecodingOptions(task: self.sessionOptions.task)
+            var decodingOptions = WhisperDecodingOptions(task: self.sessionOptions.task)
             
-            // TODO: Add Temperature shit and options from DecodeWithFallback
+            var decodeResult:WhisperDecodingResult? = nil
             
-            let decodeResult:WhisperDecodingResult = try self.decode(audioFeatures: audioFeatures,
-                                                                     decodingOptions: decodingOptions)
             
-
+            
+            for (t) in self.sessionOptions.temperatureSchedule
+            {
+                // Current pass decoding options
+                
+                if ( t > 0.0)
+                {
+                    // disable beam_size and patience when t > 0
+                    decodingOptions.beamSize = nil
+                    decodingOptions.patience = nil
+                }
+                else
+                {
+                    decodingOptions.bestOf = nil
+                }
+                
+                // Set the current temperature from our temperature schedule
+                decodingOptions.temperature = t
+                
+                decodeResult = try self.decode(audioFeatures: audioFeatures,
+                                               decodingOptions: decodingOptions)
+                
+                var needsFallback = false
+                
+                if let decodeResult = decodeResult
+                {
+                    if decodeResult.compressionRatio > self.sessionOptions.compressionRatioTresh
+                    {
+                        needsFallback = true
+                    }
+                    
+                    if (decodeResult.avgLogProbs < self.sessionOptions.logProbThresh)
+                    {
+                        needsFallback = true
+                    }
+                }
+                
+                if ( needsFallback == false)
+                {
+                    return decodeResult
+                }
+            }
+            
             return decodeResult
         }
         catch let error
@@ -492,7 +539,7 @@ public class Whisper {
         
         // Timestamp shit
 
-        // Today, we dont support audio frames other than the full 3000 Mel count
+        // Today, we dont support audio frames other than the full 3000 Mel frame count
         // So seek is count of a mel chunk (3000) * hop length / sample rate
         // See : for reference https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/transcribe.py#L176
         let idForSegment = self.sessionSegments.count
