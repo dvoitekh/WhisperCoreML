@@ -27,6 +27,12 @@ public class Whisper {
     // exact_div(kWhisperNumSamplesInChunk, kWhisperHopLength)  # 3000: number of frames in a mel spectrogram input
     static let kWhisperNumSamplesInMel:Int = 3000; // frames of Mel spectrograms
 
+    enum WhisperError:Error
+    {
+        case notImplementedYet // Just havent gotten there hang tight.
+        case unrecoverableError
+    }
+    
     /// Basic tasks types
     enum WhisperTask
     {
@@ -104,12 +110,20 @@ public class Whisper {
         var noSpeechProb:Float!
     }
     
+    private enum WhisperDecodingStrategy
+    {
+        case Greedy
+        case BeamSearch // Not implemented yet
+    }
+    
     // Vended by the decode method and used internally
     // See https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/decoding.py
     private struct WhisperDecodingOptions
     {
         var task:WhisperTask
         var languageCode:String?
+    
+        var decodingStetegy:WhisperDecodingStrategy = .Greedy
         
         // FYI Semantics from Python are these values can be
         // None
@@ -177,14 +191,9 @@ public class Whisper {
     let tokenizer = WhisperTokenizer()
     
     let mel:MelSpectrogram = MelSpectrogram(sampleCount: kWhisperNumSamplesInChunk, hopCount: kWhisperHopLength, melCount: kWhisperNumMels, numFFT: kWhisperNumFFTs)
-
-    // a chunk of audio samples, we decode that amount from some input
-    // it seems like we pad by 200 in the beginning and end?
     
     // These are variables which cache our current session, tasks and option
     var sessionOptions:WhisperOptions!
-
-    
     private var sessionAccruedAudioSamples:[Int16] = []
     private var sessionNumAccruedAudioSamples:Int = 0
     private var sessionTranscription:[String] = []
@@ -214,7 +223,6 @@ public class Whisper {
         self.resetState()
     }
     
-    
     // this function accrues
     func accrueSamplesFromSampleBuffer(sampleBuffer:CMSampleBuffer)
     {
@@ -238,8 +246,6 @@ public class Whisper {
         let samplesToAccrue = min(numAvailableSamples, remainingSampleCount);
         
         let remainingCurrentSamplesInBuffer = numAvailableSamples - samplesToAccrue;
-
-    //        print("numAvailableSamples", numAvailableSamples, "samplesToAccrue", samplesToAccrue, "remainingSampleCount", remainingSampleCount)
         
         let unsafeAudioBufferList = UnsafeMutableAudioBufferListPointer(&audioBufferList)
         
@@ -261,7 +267,6 @@ public class Whisper {
                 self.sessionNumAccruedAudioSamples = 0
             }
             
-            
             // Accrue whatever remaining Samples in our current samples buffer we have..
             if (remainingCurrentSamplesInBuffer > 0)
             {
@@ -277,6 +282,12 @@ public class Whisper {
                 self.sessionNumAccruedAudioSamples = self.sessionNumAccruedAudioSamples + remainingSamplesWeNeedToAccrueForAProperChunk.count
             }
         }
+        
+        // TODO:
+        // We might have residual audio samples that dont quite fill a full audio chunk (ie num frames is not equal to Whisper.kWhisperNumSamplesInChunk
+        // Handle that here.
+        
+        // ....
     }
         
     func transcribe(assetURL:URL, options:WhisperOptions) async -> String
@@ -413,67 +424,7 @@ public class Whisper {
 //        return array
     }
     
-    // See https://github.com/openai/whisper/blob/12e1089462a2ea92e9ade6145e7be5b6883676ff/whisper/decoding.py#L616
-    private func decode(audioFeatures: MLMultiArray, decodingOptions:WhisperDecodingOptions) throws -> Whisper.WhisperDecodingResult {
-        
-        // SOT Initialize sequence
-        var tokens:[Int] = []
-        var timestampTokens:[Int] = []
-
-        // create sot sequence - multilingual model always needs a task and
-        // https://github.com/openai/whisper/blob/main/whisper/tokenizer.py#L325
-//         https://github.com/huggingface/transformers/blob/main/tests/models/whisper/test_tokenization_whisper.py
-        tokens.append(WhisperTokenizer.sotToken)
-        tokens.append(WhisperTokenizer.langToken)
-        tokens.append(WhisperTokenizer.transcribeToken)
-        
-        // No Time Stamps
-        if ( self.sessionOptions.format == WhisperTranscriptFormat.Text )
-        {
-            tokens.append(WhisperTokenizer.notToken)
-        }
-        
-        var nextToken = 0
-        var nextTSToken = WhisperTokenizer.begToken
-
-        // More or less https://github.com/openai/whisper/blob/12e1089462a2ea92e9ade6145e7be5b6883676ff/whisper/decoding.py#L584
-        while ( nextToken != WhisperTokenizer.eotToken )
-        {
-            autoreleasepool {
  
-                let tokensArray = self.tokenizer.tokensToMultiArray(tokens, dims: 2)
-
-                let decoded = try! decoderModel.prediction(token_data: tokensArray, audio_data: audioFeatures).var_1131
-
-                let (textToken, tsToken) = self.tokenizer.nextTokenGreedy(decoded: decoded)
-
-                nextToken = textToken
-                nextTSToken = tsToken
-
-                timestampTokens.append(nextTSToken)
-                tokens.append(nextToken)
-
-                // Verbose debugging as we iterate
-//                let transcription = self.tokenizer.decode(tokens: tokens)//
-//                print(transcription)
-            }
-        }
-
-        // TODO: Implement calculation of other decodingResult requirements
-        var decodingResult = WhisperDecodingResult(tokens: tokens, text: self.tokenizer.decode(tokens: tokens))
-        
-            
-        return decodingResult
-    }
-    
-    private func resetState()
-    {
-        // Reset our state
-        self.sessionSegments = []
-        self.sessionAccruedAudioSamples = []
-        self.sessionNumAccruedAudioSamples = 0
-    }
-        
     // https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/transcribe.py#L102
     private func decodeWithFallback(audio:[Int16]) -> WhisperDecodingResult?
     {
@@ -483,7 +434,6 @@ public class Whisper {
             var decodingOptions = WhisperDecodingOptions(task: self.sessionOptions.task)
             
             var decodeResult:WhisperDecodingResult? = nil
-            
             
             
             for (t) in self.sessionOptions.temperatureSchedule
@@ -537,6 +487,93 @@ public class Whisper {
         }
     }
     
+    // See https://github.com/openai/whisper/blob/12e1089462a2ea92e9ade6145e7be5b6883676ff/whisper/decoding.py#L616
+    private func decode(audioFeatures: MLMultiArray, decodingOptions:WhisperDecodingOptions) throws -> Whisper.WhisperDecodingResult {
+        
+        // SOT Initialize sequence
+        var tokens:[Int] = []
+        var timestampTokens:[Int] = []
+
+        // create sot sequence - multilingual model always needs a task and
+        // https://github.com/openai/whisper/blob/main/whisper/tokenizer.py#L325
+        // https://github.com/huggingface/transformers/blob/main/tests/models/whisper/test_tokenization_whisper.py
+        tokens.append(WhisperTokenizer.sotToken)
+        tokens.append(WhisperTokenizer.langToken)
+        tokens.append(WhisperTokenizer.transcribeToken)
+        
+        // No Time Stamps
+        if ( self.sessionOptions.format == WhisperTranscriptFormat.Text )
+        {
+            tokens.append(WhisperTokenizer.notToken)
+        }
+        
+        var nextToken = 0
+        var nextTSToken = WhisperTokenizer.begToken
+
+        // More or less main loop https://github.com/openai/whisper/blob/12e1089462a2ea92e9ade6145e7be5b6883676ff/whisper/decoding.py#L584
+        while ( nextToken != WhisperTokenizer.eotToken )
+        {
+            autoreleasepool {
+ 
+                let tokensArray = self.tokenizer.tokensToMultiArray(tokens, dims: 2)
+
+                let decoded = try! decoderModel.prediction(token_data: tokensArray, audio_data: audioFeatures).var_1131
+
+                let (textToken, tsToken) = self.tokenizer.nextTokenGreedy(decoded: decoded)
+
+                nextToken = textToken
+                nextTSToken = tsToken
+
+                timestampTokens.append(nextTSToken)
+                tokens.append(nextToken)
+
+                // Verbose debugging as we iterate
+//                let transcription = self.tokenizer.decode(tokens: tokens)//
+//                print(transcription)
+            }
+        }
+
+        // TODO: Implement calculation of other decodingResult requirements
+        var decodingResult = WhisperDecodingResult(tokens: tokens, text: self.tokenizer.decode(tokens: tokens))
+        
+            
+        return decodingResult
+    }
+    
+    // See https://github.com/openai/whisper/blob/12e1089462a2ea92e9ade6145e7be5b6883676ff/whisper/decoding.py#L199
+    // Beam or Greedy sampling logic goes here
+    private func decodeTokenUpdate(decodeOptions:WhisperDecodingOptions, tokens:[Int], logits:MLMultiArray, sumLogProbs:[Int]) throws -> (tokens:[Int], completed:Bool)
+    {
+        switch (decodeOptions.decodingStetegy)
+        {
+        case .Greedy:
+            throw WhisperError.notImplementedYet
+//            return self.decodeGreedyStrategy(decodeOptions:decodeOptions, tokens: tokens, logits: logits, sumLogProbs: sumLogProbs)
+            
+        case .BeamSearch:
+            throw WhisperError.notImplementedYet
+        }
+    }
+    
+    // See "Greedy Decoder"
+    // https://github.com/openai/whisper/blob/12e1089462a2ea92e9ade6145e7be5b6883676ff/whisper/decoding.py#L249
+//    private func decodeGreedyStrategy(decodeOptions:WhisperDecodingOptions, tokens:[Int], logits:MLMultiArray, sumLogProbs:[Int]) -> (tokens:[Int], completed:Bool)
+//    {
+//        let temp = decodeOptions.temperature
+//
+//        if (temp == 0)
+//        {
+//            let next_tokens =
+//        }
+//    }
+
+    // See BeamSearch
+    // https://github.com/openai/whisper/blob/12e1089462a2ea92e9ade6145e7be5b6883676ff/whisper/decoding.py#L277
+//    private func decodeBeamSearchStrategy(tdecodeOptions:WhisperDecodingOptions, okens:[Int], logits:MLMultiArray, sumLogProbs:[Int]) -> (tokens:[Int], completed:Bool)
+//    {
+//
+//    }
+
     // https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/transcribe.py#L175
     private func mainDeccodeLogicFromTranscribe(audio:[Int16])
     {
@@ -573,6 +610,14 @@ public class Whisper {
             
         }
 
+    }
+    
+    private func resetState()
+    {
+        // Reset our state
+        self.sessionSegments = []
+        self.sessionAccruedAudioSamples = []
+        self.sessionNumAccruedAudioSamples = 0
     }
     
 }
