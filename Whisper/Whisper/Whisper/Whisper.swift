@@ -553,6 +553,11 @@ public class Whisper {
 
         if let result:WhisperDecodingResult = self.decodeWithFallback(audio: audio)
         {
+            if ( self.sessionOptions.verbose )
+            {
+                print (result.text)
+            }
+            
             let currentSegment = Whisper.WhisperSegment(id: idForSegment,
                                                         seek: seek,
                                                         startTime: CMTimeMakeWithSeconds(timestampOffset, preferredTimescale: 600),

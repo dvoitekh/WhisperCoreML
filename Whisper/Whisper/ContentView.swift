@@ -89,7 +89,8 @@ struct ContentView: View {
             let start = Date().timeIntervalSince1970
             
             let options:Whisper.WhisperOptions = Whisper.WhisperOptions(task: .Transcribe,
-                                                                        format: .Text)
+                                                                        format: .Text,
+                                                                        verbose: true)
             
             let transcription = await whisper.transcribe(assetURL: url, options: options)
             
