@@ -458,7 +458,7 @@ class WhisperTokenizer:GPT2Tokenizer
     static let languageStrings:[String] = WhisperTokenizer.LANGUAGES.map{ "|<" + $0 + ">|" }
     static let translateString = "<|translate|>"
     static let transcribeString = "<|transcribe|>"
-    static let solmString = "<|startoflm|>"
+    static let solmString = "<|startoflm|>" // start of language model (??)
     static let prevString = "<|startofprev|>"
     static let noSpeechString = "<|nospeech|>"
     static let noTimestampsString = "<|notimestamps|>"
@@ -472,7 +472,6 @@ class WhisperTokenizer:GPT2Tokenizer
         super.init()
 
         self.specialTokens = self.generateSpecialTokenDict()
-        
     }
     
     // MARK: - Token Accessors
