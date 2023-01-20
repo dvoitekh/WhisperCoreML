@@ -390,7 +390,7 @@ public class Whisper {
         
         let array = try MLMultiArray(shape: [1, 80, 3000], dataType: .float32)
 
-        mel.withUnsafeBytes { melPtr in
+        _ = mel.withUnsafeBytes { melPtr in
             array.withUnsafeMutableBytes { arrayPtr, strides in
                 memcpy(arrayPtr.baseAddress!, melPtr.baseAddress!, 80 * 3000 * MemoryLayout<Float>.size)
             }
@@ -481,6 +481,7 @@ public class Whisper {
         }
         catch let error
         {
+            print("Unable to process audio frames", error)
             return nil
         }
     }
