@@ -5,7 +5,13 @@ A port of OpenAI's Whisper Speech Transcription model to CoreML
 
 The goal of this project is to natively port, and optimize Whisper for use on Apple Silicon including optimization for the Apple Neural Engine, and match the incredible WhisperCPP project on features.
 
-Please note this repo is under heavy development, so there will be bumps in the road.
+---
+
+***Please note this repo is currently under development, so there will be bumps in the road.***
+
+***Community input is welcome!***
+
+---
 
 You can:
 
