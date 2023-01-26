@@ -375,22 +375,7 @@ public class Whisper {
     
     // MARK: Private Methods
     
-    // Internal Helper to just test and visualize the output of our Log Mel processing
-    private func normalize(array: [Float]) -> [Float] {
-        var normalizedArray = array
-           var min = Float.greatestFiniteMagnitude
-           var max = -Float.greatestFiniteMagnitude
-           var shift: Float = 0.0
-           var scale: Float = 0.0
-           
-           vDSP_minv(array, 1, &min, vDSP_Length(array.count))
-           vDSP_maxv(array, 1, &max, vDSP_Length(array.count))
-           shift = abs(min)
-           vDSP_vsadd(array, 1, &shift, &normalizedArray, 1, vDSP_Length(array.count))
-           scale = 1 / (max + shift)
-           vDSP_vsmul(normalizedArray, 1, &scale, &normalizedArray, 1, vDSP_Length(array.count))
-           return normalizedArray
-    }
+   
     
     private func encode(audio: [Int16]) throws -> MLMultiArray {
         // TODO: Fix our vDSP based mel processor
@@ -399,17 +384,7 @@ public class Whisper {
         let mel:[Float] = mel.processDataRosa(audio: audio)
 //        let mel = MelSpectrogram.loadReferencePythonRawMelToDebugShit()
         
-        let normalizedFloatMel =  self.normalize(array: mel )
-        
-        normalizedFloatMel.withUnsafeBufferPointer { unsafeMel in
-            
-            let data = Data(buffer: unsafeMel)
-            do {
-                try data.write(to: URL(fileURLWithPath: "/Users/vade/Downloads/rawMel-normalized.raw"))
-            }
-            catch {
-            }
-        }
+        self.saveNormalizedMelToDisk(mel: mel, url: URL(fileURLWithPath: "/Users/vade/Downloads/rawMel-normalized.raw"))
         
         let array = try MLMultiArray(shape: [1, 80, 3000], dataType: .float32)
 
@@ -620,6 +595,39 @@ public class Whisper {
         self.sessionNumAccruedAudioSamples = 0
     }
     
+    // MARK: Debug Methods
+
+    // Internal Helper to just test and visualize the output of our Log Mel processing
+    private func normalize(array: [Float]) -> [Float] {
+        var normalizedArray = array
+           var min = Float.greatestFiniteMagnitude
+           var max = -Float.greatestFiniteMagnitude
+           var shift: Float = 0.0
+           var scale: Float = 0.0
+           
+           vDSP_minv(array, 1, &min, vDSP_Length(array.count))
+           vDSP_maxv(array, 1, &max, vDSP_Length(array.count))
+           shift = abs(min)
+           vDSP_vsadd(array, 1, &shift, &normalizedArray, 1, vDSP_Length(array.count))
+           scale = 1 / (max + shift)
+           vDSP_vsmul(normalizedArray, 1, &scale, &normalizedArray, 1, vDSP_Length(array.count))
+           return normalizedArray
+    }
+    
+    private func saveNormalizedMelToDisk(mel:[Float], url:URL)
+    {
+        let normalizedFloatMel =  self.normalize(array: mel )
+        
+        normalizedFloatMel.withUnsafeBufferPointer { unsafeMel in
+            
+            let data = Data(buffer: unsafeMel)
+            do {
+                try data.write(to: url)
+            }
+            catch {
+            }
+        }
+    }
 }
 
 
