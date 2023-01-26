@@ -9,11 +9,15 @@ You can:
 
 Create a Whipser instance `whisper = try Whisper()`
 
-And run transcription on a Quicktime compatible asset via: `await whisper.predict(assetURL: url)`
+And run transcription on a Quicktime compatible asset via: `await whisper.transcribe(assetURL:URL, options:WhisperOptions)`
 
-And Whipser CoreML will load an asset using AVFoundation and convert the audio to the appropriate format for transcription.
+You can choose options via the `WhisperOptions` struct.
 
-Alternatively, for realtime usage, you can call `accrueSamplesFromSampleBuffer(sampleBuffer:CMSampleBuffer)` and vend samples from an AVCaptureSession or AVAudioSession. Note, we accrue a 30 second sample for now as that is the expected number of samples required. 
+Whipser CoreML will load an asset using AVFoundation and convert the audio to the appropriate format for transcription.
+
+Alternatively, for realtime usage, you can call start a whisper session via `startWhisperSession(options:WhisperOptions)`, and then send sample buffers to `accrueSamplesFromSampleBuffer(sampleBuffer:CMSampleBuffer)` from say an AVCaptureSession or AVAudioSession, or any other source.
+
+Note, we accrue a 30 second sample for now as that is the expected number of samples required. 
 
 ## Status
 * [X] Working Multi Lingual Transcription
