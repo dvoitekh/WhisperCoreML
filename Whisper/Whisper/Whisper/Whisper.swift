@@ -11,7 +11,16 @@ import AVFoundation
 import Accelerate
 import RosaKit
 
-
+protocol WhisperLogitFilter
+{
+    //  Parameters
+    //    ----------
+    //    logits : Tensor, shape = (n_batch, vocab_size)
+    //        per-token logits of the probability distribution at the current step
+    //    tokens : Tensor, shape = (n_batch, current_sequence_length)
+    //        all tokens in the context so far, including the prefix and sot_sequence tokens
+    func apply(logits: inout MLMultiArray, tokens: inout MLMultiArray)
+}
 
 public class Whisper {
     
@@ -85,6 +94,65 @@ public class Whisper {
     // MARK: Private Constants Enums and Structs
     
     // All of these are major WIP
+   
+    // See https://github.com/openai/whisper/blob/12e1089462a2ea92e9ade6145e7be5b6883676ff/whisper/decoding.py#L383
+    private struct SupressBlank: WhisperLogitFilter
+    {
+        let tokenizer:WhisperTokenizer!
+        let encodedBlank:[Int]!
+        let sampleBegin:Int!
+        
+        init(tokenizer: WhisperTokenizer!, sampleBegin: Int) {
+            self.tokenizer = tokenizer
+            self.encodedBlank = tokenizer.encode(text: " ")
+            self.sampleBegin = sampleBegin
+        }
+        
+        func apply(logits: inout MLMultiArray, tokens: inout MLMultiArray)
+        {
+            print("Not Yet Implemented")
+            
+            // https://www.geeksforgeeks.org/how-to-slice-a-3d-tensor-in-pytorch/
+            // tensor[tensor_position_start:tensor_position_end, tensor_dimension_start:tensor_dimension_end , tensor_value_start:tensor_value_end]
+            // logits[:, self.tokenizer.encode(" ") + [self.tokenizer.eot]] = -np.inf
+            
+            // Need to - for all batch dimensions, access tokens at the encoded " " int value, and the to value and set to -Inf
+            // Float.infinity.negate()
+        }
+    }
+    
+    private struct SupressTokens: WhisperLogitFilter
+    {
+        let suppress:[Int]
+        
+        init(suppress: [Int]) {
+            self.suppress = suppress
+        }
+        func apply(logits: inout MLMultiArray, tokens: inout MLMultiArray)
+        {
+            print("Not Yet Implemented")
+        }
+    }
+    
+    private struct ApplyTimestampRules: WhisperLogitFilter
+    {
+        let tokenizer:WhisperTokenizer!
+        let sampleBegin:Int!
+        let maxInitialTimestampIdx:Int?
+        
+        init(tokenizer: WhisperTokenizer!, sampleBegin: Int!, maxInitialTimestampIdx: Int?) {
+            self.tokenizer = tokenizer
+            self.sampleBegin = sampleBegin
+            self.maxInitialTimestampIdx = maxInitialTimestampIdx
+        }
+
+        func apply(logits: inout MLMultiArray, tokens: inout MLMultiArray)
+        {
+            print("Not Yet Implemented")
+        }
+
+    }
+    
     
     // WhisperSegment internal state tracking for our Whisper session
     // See https://github.com/openai/whisper/blob/f82bc59f5ea234d4b97fb2860842ed38519f7e65/whisper/transcribe.py#L153
