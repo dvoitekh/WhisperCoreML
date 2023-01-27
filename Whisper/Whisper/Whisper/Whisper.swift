@@ -19,7 +19,7 @@ protocol WhisperLogitFilter
     //        per-token logits of the probability distribution at the current step
     //    tokens : Tensor, shape = (n_batch, current_sequence_length)
     //        all tokens in the context so far, including the prefix and sot_sequence tokens
-    func apply(logits: inout MLMultiArray, tokens: inout MLMultiArray)
+    func apply(logits: inout MLShapedArray<Float>, tokens: inout MLShapedArray<Int32>)
 }
 
 public class Whisper {
@@ -108,7 +108,7 @@ public class Whisper {
             self.sampleBegin = sampleBegin
         }
         
-        func apply(logits: inout MLMultiArray, tokens: inout MLMultiArray)
+        func apply(logits: inout MLShapedArray<Float>, tokens: inout MLShapedArray<Int32>)
         {
             print("Not Yet Implemented")
             
@@ -128,7 +128,7 @@ public class Whisper {
         init(suppress: [Int]) {
             self.suppress = suppress
         }
-        func apply(logits: inout MLMultiArray, tokens: inout MLMultiArray)
+        func apply(logits: inout MLShapedArray<Float>, tokens: inout MLShapedArray<Int32>)
         {
             print("Not Yet Implemented")
         }
@@ -146,7 +146,7 @@ public class Whisper {
             self.maxInitialTimestampIdx = maxInitialTimestampIdx
         }
 
-        func apply(logits: inout MLMultiArray, tokens: inout MLMultiArray)
+        func apply(logits: inout MLShapedArray<Float>, tokens: inout MLShapedArray<Int32>)
         {
             print("Not Yet Implemented")
         }
@@ -445,7 +445,7 @@ public class Whisper {
     
    
     
-    private func encode(audio: [Int16]) throws -> MLMultiArray {
+    private func encode(audio: [Int16]) throws -> MLShapedArray<Float> {
         // TODO: Fix our vDSP based mel processor
 //        let mel:[Float] = mel.processData(audio: audio)
 
@@ -454,15 +454,17 @@ public class Whisper {
         
         self.saveNormalizedMelToDisk(mel: mel, url: URL(fileURLWithPath: "/Users/vade/Downloads/rawMel-normalized.raw"))
         
-        let array = try MLMultiArray(shape: [1, 80, 3000], dataType: .float32)
-
-        _ = mel.withUnsafeBytes { melPtr in
-            array.withUnsafeMutableBytes { arrayPtr, strides in
-                memcpy(arrayPtr.baseAddress!, melPtr.baseAddress!, 80 * 3000 * MemoryLayout<Float>.size)
-            }
-        }
+        let array = MLShapedArray(scalars: mel, shape: [1, 80, 3000])
         
-        let encoded = try encoderModel.prediction(logmel_data:array).var_719
+//        let array = try MLMultiArray(shape: [1, 80, 3000], dataType: .float32)
+
+//        _ = mel.withUnsafeBytes { melPtr in
+//            array.withUnsafeMutableBytes { arrayPtr, strides in
+//                memcpy(arrayPtr.baseAddress!, melPtr.baseAddress!, 80 * 3000 * MemoryLayout<Float>.size)
+//            }
+//        }
+        
+        let encoded = try encoderModel.prediction(logmel_data:array).var_719ShapedArray
         return encoded
 //        return array
     }
@@ -477,7 +479,6 @@ public class Whisper {
             var decodingOptions = WhisperDecodingOptions(task: self.sessionOptions.task)
             
             var decodeResult:WhisperDecodingResult? = nil
-            
             
             for (t) in self.sessionOptions.temperatureSchedule
             {
@@ -531,7 +532,7 @@ public class Whisper {
     }
     
     // See https://github.com/openai/whisper/blob/12e1089462a2ea92e9ade6145e7be5b6883676ff/whisper/decoding.py#L616
-    private func decode(audioFeatures: MLMultiArray, decodingOptions:WhisperDecodingOptions) throws -> Whisper.WhisperDecodingResult {
+    private func decode(audioFeatures: MLShapedArray<Float>, decodingOptions:WhisperDecodingOptions) throws -> Whisper.WhisperDecodingResult {
         
         // SOT Initialize sequence
         var tokens:[Int] = []
@@ -558,7 +559,7 @@ public class Whisper {
         {
             autoreleasepool {
  
-                let tokensArray = self.tokenizer.tokensToMultiArray(tokens, dims: 2)
+                let tokensArray = self.tokenizer.tokensToMultiArray(tokens)
 
                 let decoded = try! decoderModel.prediction(token_data: tokensArray, audio_data: audioFeatures).var_1131
 
@@ -585,7 +586,7 @@ public class Whisper {
     
     // See https://github.com/openai/whisper/blob/12e1089462a2ea92e9ade6145e7be5b6883676ff/whisper/decoding.py#L199
     // Beam or Greedy sampling logic goes here
-    private func decodeTokenUpdate(decodeOptions:WhisperDecodingOptions, tokens:[Int], logits:MLMultiArray, sumLogProbs:[Int]) throws -> (tokens:[Int], completed:Bool)
+    private func decodeTokenUpdate(decodeOptions:WhisperDecodingOptions, tokens:[Int], logits:MLShapedArray<Float>, sumLogProbs:[Int]) throws -> (tokens:[Int], completed:Bool)
     {
         switch (decodeOptions.decodingStetegy)
         {

@@ -504,31 +504,34 @@ class WhisperTokenizer:GPT2Tokenizer
         return specialTokenDict
     }
     
-    func tokenToMultiArray(token:Int) -> MLMultiArray
+    func tokenToMultiArray(token:Int) -> MLShapedArray<Int32>
     {
-        let array = try! MLMultiArray(shape: [1, 1], dataType: .int32)
-        
-        let ptr = UnsafeMutablePointer<Int32>(OpaquePointer(array.dataPointer))
+        let array = MLShapedArray<Int32>(scalar: Int32(token))
 
-        ptr[0] = Int32(token)
+//        let array = try! MLMultiArray(shape: [1, 1], dataType: .int32)
+//        let ptr = UnsafeMutablePointer<Int32>(OpaquePointer(array.dataPointer))
+//        ptr[0] = Int32(token)
 
         return array
     }
     
-    func tokensToMultiArray(_ tokens: [Int], dims: Int = 2) -> MLMultiArray
+    func tokensToMultiArray(_ tokens: [Int] ) -> MLShapedArray<Int32>
     {
-        var shape = Array(repeating: 1, count: dims)
-        shape[shape.count - 1] = tokens.count
-        /// Examples:
-        /// dims=1 : [arr.count]
-        /// dims=2 : [1, arr.count]
-        ///
-        let o = try! MLMultiArray(shape: shape as [NSNumber], dataType: .int32)
-        let ptr = UnsafeMutablePointer<Int32>(OpaquePointer(o.dataPointer))
-        for (i, item) in tokens.enumerated() {
-            ptr[i] = Int32(item)
-        }
-        return o
+        let array = MLShapedArray<Int32>(scalars: tokens.map{ Int32( $0) }, shape: [1, tokens.count])
+
+        return array
+//        var shape = Array(repeating: 1, count: dims)
+//        shape[shape.count - 1] = tokens.count
+//        /// Examples:
+//        /// dims=1 : [arr.count]
+//        /// dims=2 : [1, arr.count]
+//        ///
+//        let o = try! MLMultiArray(shape: shape as [NSNumber], dataType: .int32)
+//        let ptr = UnsafeMutablePointer<Int32>(OpaquePointer(o.dataPointer))
+//        for (i, item) in tokens.enumerated() {
+//            ptr[i] = Int32(item)
+//        }
+//        return o
     }
 
     func simdMaxIndexForRange(startToken:Int, endToken:Int, decoded:MLMultiArray) -> (Int, Float)
