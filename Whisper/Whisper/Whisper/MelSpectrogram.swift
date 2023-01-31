@@ -105,7 +105,8 @@ public class MelSpectrogram
         var flattnedImaginary:[Double] = allSampleImaginary.flatMap { $0 }
         
         let flattenedMelMatrix = self.melFilterMatrix.flatMap{ $0 }
-        
+//        let flattenedMelMatrix = [Double].createMelFilter(sampleRate: Whisper.kWhisperSampleRate, FTTCount:Whisper.kWhisperNumFFTs, melsCount:Whisper.kWhisperNumMels).flatMap { $0 }
+
 //        print("Swift 0 - complex real min", vDSP.minimum(flattnedReal), "max", vDSP.maximum(flattnedReal))
 //        print("Swift 0 - complex imag min", vDSP.minimum(flattnedImaginary), "max", vDSP.maximum(flattnedImaginary))
         

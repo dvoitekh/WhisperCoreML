@@ -258,7 +258,7 @@ public class Whisper {
     let encoderModel: encoder_base
     let tokenizer = WhisperTokenizer()
     
-    let mel:MelSpectrogram = MelSpectrogram(sampleCount: kWhisperNumSamplesInChunk, hopCount: kWhisperHopLength, melCount: kWhisperNumMels, numFFT: kWhisperNumFFTs)
+    let melGenerator:MelSpectrogram = MelSpectrogram(sampleCount: kWhisperNumSamplesInChunk, hopCount: kWhisperHopLength, melCount: kWhisperNumMels, numFFT: kWhisperNumFFTs)
     
     // These are variables which cache our current session, tasks and option
     var sessionOptions:WhisperOptions!
@@ -447,13 +447,15 @@ public class Whisper {
     
     private func encode(audio: [Int16]) throws -> MLShapedArray<Float> {
         // TODO: Fix our vDSP based mel processor
-//        let mel:[Float] = mel.processData(audio: audio)
+        let mel:[Float] = melGenerator.processData(audio: audio)
 
-        let mel:[Float] = mel.processDataRosa(audio: audio)
-//        let mel = MelSpectrogram.loadReferencePythonRawMelToDebugShit()
+        let melRosa:[Float] = melGenerator.processDataRosa(audio: audio)
+        let melPreProcessed = MelSpectrogram.loadReferencePythonRawMelToDebugShit()
         
         self.saveNormalizedMelToDisk(mel: mel, url: URL(fileURLWithPath: "/Users/vade/Downloads/rawMel-normalized.raw"))
-        
+        self.saveNormalizedMelToDisk(mel: melRosa, url: URL(fileURLWithPath: "/Users/vade/Downloads/rawMel-rosa-normalized.raw"))
+        self.saveNormalizedMelToDisk(mel: melPreProcessed, url: URL(fileURLWithPath: "/Users/vade/Downloads/rawMel-python-normalized.raw"))
+
         let array = MLShapedArray(scalars: mel, shape: [1, 80, 3000])
         
 //        let array = try MLMultiArray(shape: [1, 80, 3000], dataType: .float32)

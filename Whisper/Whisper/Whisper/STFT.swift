@@ -34,7 +34,7 @@ class STFT
     var fftWindowLength:Int!
     var fftWindowType:vDSP.WindowSequence!
     
-    private var fft:RealFFT!
+    private var fft:NumpyRFFT!
 
     // MARK: STFT
     
@@ -55,7 +55,7 @@ class STFT
     
     init(fftLength:Int, windowType:vDSP.WindowSequence, windowLength:Int, sampleCount:Int, hopCount:Int, center:Bool = true, padding:Padding = .Reflect )
     {
-        self.fft = RealFFT(numFFT: fftLength)
+        self.fft = NumpyRFFT(numFFT: fftLength)
 
         self.fftLength = fftLength
         self.fftWindowType = windowType
@@ -92,7 +92,7 @@ class STFT
             {
             case .Reflect, .none:
                 let reflectStart = audioFloat[0 ..< self.fftLength/2]
-                let reflectEnd = audioFloat[audioFloat.count -  self.fftLength/2 ..< audioFloat.count]
+                let reflectEnd = audioFloat[audioFloat.count - 1 -  self.fftLength/2 ..< audioFloat.count]
                 
                 audioFloat.insert(contentsOf:reflectStart.reversed(), at: 0)
                 audioFloat.append(contentsOf:reflectEnd.reversed())
@@ -108,6 +108,7 @@ class STFT
             // Alternatively all at the end?
             audioFloat.append(contentsOf: [Double](repeating: 0, count: self.fftLength))
         }
+
         // Split Complex arrays holding the FFT results
         var allSampleReal:[[Double]] = []
         var allSampleImaginary:[[Double]] = []
@@ -127,7 +128,7 @@ class STFT
 
             assert(audioFrame.count == self.fftLength)
             
-            var (real, imaginary, _) = self.fft.forward(audioFrame)
+            var (real, imaginary) = self.fft.forward(audioFrame)
             
             // We divide our half our FFT output,
             // because the Pytorch `onesized` is true by default for real valued signals
