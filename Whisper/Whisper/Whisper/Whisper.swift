@@ -443,12 +443,10 @@ public class Whisper {
     
     // MARK: Private Methods
     
-   
-    
     private func encode(audio: [Int16]) throws -> MLShapedArray<Float> {
         // TODO: Fix our vDSP based mel processor
-        let mel:[Float] = melGenerator.processData(audio: audio)
 
+        let mel:[Float] = melGenerator.processData(audio: audio)
         let melRosa:[Float] = melGenerator.processDataRosa(audio: audio)
         let melPreProcessed = MelSpectrogram.loadReferencePythonRawMelToDebugShit()
         
@@ -457,14 +455,6 @@ public class Whisper {
         self.saveNormalizedMelToDisk(mel: melPreProcessed, url: URL(fileURLWithPath: "/Users/vade/Downloads/rawMel-python-normalized.raw"))
 
         let array = MLShapedArray(scalars: mel, shape: [1, 80, 3000])
-        
-//        let array = try MLMultiArray(shape: [1, 80, 3000], dataType: .float32)
-
-//        _ = mel.withUnsafeBytes { melPtr in
-//            array.withUnsafeMutableBytes { arrayPtr, strides in
-//                memcpy(arrayPtr.baseAddress!, melPtr.baseAddress!, 80 * 3000 * MemoryLayout<Float>.size)
-//            }
-//        }
         
         let encoded = try encoderModel.prediction(logmel_data:array).var_719ShapedArray
         return encoded
@@ -485,7 +475,6 @@ public class Whisper {
             for (t) in self.sessionOptions.temperatureSchedule
             {
                 // Current pass decoding options
-                
                 if ( t > 0.0)
                 {
                     // disable beam_size and patience when t > 0

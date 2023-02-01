@@ -31,7 +31,6 @@ public class WhisperFFT
 public class NumpyRFFT : WhisperFFT
 {
 //    var fft : vDSP.FFT<DSPDoubleSplitComplex>
-    var n:Int!
     var nOver2:Int!
     var logSize:vDSP_Length!
     
@@ -40,7 +39,6 @@ public class NumpyRFFT : WhisperFFT
         super.init(numFFT:numFFT)
 
         self.logSize = vDSP_Length(floor(log2(Float(self.numFFT))))
-        self.n = numFFT
         self.nOver2 = (numFFT / 2)
 
 //        self.fft = vDSP.FFT(log2n: UInt(self.nOver2),
@@ -48,10 +46,11 @@ public class NumpyRFFT : WhisperFFT
 //                           ofType: DSPDoubleSplitComplex.self)!
 
     }
-
     
     public func forward(_ audioFrame:[Double]) -> ([Double], [Double])
     {
+        precondition(audioFrame.count == self.numFFT, "FFT Size and Audio frame size doesnt match")
+        
         var windowedAudioFrame = [Double](repeating: 0, count: self.numFFT)
         
         vDSP.multiply(audioFrame,
@@ -61,12 +60,11 @@ public class NumpyRFFT : WhisperFFT
         var sampleReal:[Double] = [Double](repeating: 0, count: self.nOver2)
         var sampleImaginary:[Double] = [Double](repeating: 0, count: self.nOver2)
 
-        var resultReal:[Double] = [Double](repeating: 0, count: n)
-        var resultImaginary:[Double] = [Double](repeating: 0, count:n)
+        var resultReal:[Double] = [Double](repeating: 0, count: self.numFFT)
+        var resultImaginary:[Double] = [Double](repeating: 0, count:self.numFFT)
 
         let fftSetup:FFTSetupD = vDSP_create_fftsetupD(self.logSize, FFTRadix(kFFTRadix2))!;
 
-        
         sampleReal.withUnsafeMutableBytes { unsafeReal in
             sampleImaginary.withUnsafeMutableBytes { unsafeImaginary in
                 
@@ -87,14 +85,12 @@ public class NumpyRFFT : WhisperFFT
                             vDSP_ctozD(letInterleavedComplexAudio, 2, &complexSignal, 1, vDSP_Length(self.nOver2)) ;
 
                             vDSP_fft_zripD (fftSetup, &complexSignal, 1, self.logSize, FFTDirection(kFFTDirection_Forward));
-
                         }
                         
                         // Scale by 1/2 : https://stackoverflow.com/questions/51804365/why-is-fft-different-in-swift-than-in-python
                         var scaleFactor = Double( 1.0/2.0 ) // * 1.165 ??
                         vDSP_vsmulD(complexSignal.realp, 1, &scaleFactor, complexSignal.realp, 1, vDSP_Length(self.nOver2))
                         vDSP_vsmulD(complexSignal.imagp, 1, &scaleFactor, complexSignal.imagp, 1, vDSP_Length(self.nOver2))
-                        
                         
                         // Borrowed from https://github.com/jseales/numpy-style-fft-in-obj-c
                         complexResult.realp[0] = complexSignal.realp[0];
@@ -106,9 +102,10 @@ public class NumpyRFFT : WhisperFFT
                         {
                             complexResult.realp[i] = complexSignal.realp[i];
                             complexResult.imagp[i] = complexSignal.imagp[i];
+
                             // Complex conjugate is mirrored (?)
-                            complexResult.realp[n - i] = complexSignal.realp[i];
-                            complexResult.imagp[n - i] = complexSignal.imagp[i];
+                            complexResult.realp[self.numFFT - i] = complexSignal.realp[i];
+                            complexResult.imagp[self.numFFT - i] = complexSignal.imagp[i];
                         }
                     }
                 }
@@ -140,7 +137,6 @@ public class NumpyFFT : WhisperFFT
 //                           ofType: DSPDoubleSplitComplex.self)!
 
     }
-
     
     public func forward(_ audioFrame:[Double]) -> ([Double], [Double])
     {

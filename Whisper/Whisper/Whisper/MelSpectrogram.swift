@@ -115,7 +115,6 @@ public class MelSpectrogram
         var magnitudes = [Double](repeating: 0, count: flattnedReal.count)
         var melSpectroGram = [Double](repeating: 0, count: Whisper.kWhisperNumMels * Whisper.kWhisperNumSamplesInMel) // 80 x 3000
         
-        
         flattnedReal.withUnsafeMutableBytes { unsafeFlatReal in
             flattnedImaginary.withUnsafeMutableBytes { unsafeFlatImaginary in
                 
@@ -236,7 +235,6 @@ public class MelSpectrogram
         var melSpectroGram:[Double] = melDouble.flatMap( { $0 } )
         
         // Normalize the Mel Spectrogram into a Log Mel in the format Whisper expects:
-        
 //        print("Swift 2 - mel min            ", vDSP.minimum(melSpectroGram), "max", vDSP.maximum(melSpectroGram))
 
         // Step 7 - clamp / clip the min to 1e-10
