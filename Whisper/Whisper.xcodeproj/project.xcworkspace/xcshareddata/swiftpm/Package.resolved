@@ -1,6 +1,15 @@
 {
   "pins" : [
     {
+      "identity" : "matft",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/jjjkkkjjj/Matft",
+      "state" : {
+        "revision" : "6372049074c17dfd8e6cccd83af6228c601c7c63",
+        "version" : "0.3.2"
+      }
+    },
+    {
       "identity" : "plain-pocketfft",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/dhrebeniuk/plain-pocketfft.git",
@@ -25,6 +34,15 @@
       "state" : {
         "branch" : "main",
         "revision" : "a00984a4c320cef88effa68574318ec34d9f165c"
+      }
+    },
+    {
+      "identity" : "swift-collections",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-collections",
+      "state" : {
+        "revision" : "937e904258d22af6e447a0b72c0bc67583ef64a2",
+        "version" : "1.0.4"
       }
     }
   ],

@@ -563,15 +563,20 @@ public class Whisper {
  
                 let tokensArray = self.tokenizer.tokensToMultiArray(tokens)
 
-                let decoded = try! decoderModel.prediction(token_data: tokensArray, audio_data: audioFeatures).var_1131
+                let logits = try! decoderModel.prediction(token_data: tokensArray, audio_data: audioFeatures).var_1131
 
-                let (textToken, tsToken) = self.tokenizer.nextTokenGreedy(decoded: decoded)
-
+                // Get logit filters
+                // apply them
+                
+                
+                let (textToken, tsToken) = self.tokenizer.nextTokenGreedy(decoded: logits)
+                
                 nextToken = textToken
                 nextTSToken = tsToken
 
                 timestampTokens.append(nextTSToken)
                 tokens.append(nextToken)
+
 
                 // Verbose debugging as we iterate
 //                let transcription = self.tokenizer.decode(tokens: tokens)//
@@ -579,6 +584,8 @@ public class Whisper {
             }
         }
 
+        
+        
         // TODO: Implement calculation of other decodingResult requirements
         var decodingResult = WhisperDecodingResult(tokens: tokens, text: self.tokenizer.decode(tokens: tokens))
         
