@@ -26,6 +26,8 @@
 		1B6A59D929634F2A004C510D /* MelSpectrogram.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B6A59D829634F2A004C510D /* MelSpectrogram.swift */; };
 		1B6A59DF2963A1A6004C510D /* mel_filters.data in Resources */ = {isa = PBXBuildFile; fileRef = 1B6A59DE2963A1A6004C510D /* mel_filters.data */; };
 		1B6A59E12963A670004C510D /* AudioLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B6A59E02963A670004C510D /* AudioLoader.swift */; };
+		1BF960EA298B063200AA2990 /* Matft in Frameworks */ = {isa = PBXBuildFile; productRef = 1BF960E9298B063200AA2990 /* Matft */; };
+		1BF960EC298B071300AA2990 /* MatftShapedArrayExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BF960EB298B071300AA2990 /* MatftShapedArrayExtensions.swift */; };
 		1BFAC9DD2968F0A900A5A099 /* WhisperTokenizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BFAC9DC2968F0A900A5A099 /* WhisperTokenizer.swift */; };
 		1BFAC9E02968F11100A5A099 /* gpt2-merges.txt in Resources */ = {isa = PBXBuildFile; fileRef = 1BFAC9DE2968F11100A5A099 /* gpt2-merges.txt */; };
 		1BFAC9E12968F11100A5A099 /* gpt2-vocab.json in Resources */ = {isa = PBXBuildFile; fileRef = 1BFAC9DF2968F11100A5A099 /* gpt2-vocab.json */; };
@@ -55,6 +57,7 @@
 		1B6A59DB29635145004C510D /* encoder.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = encoder.mlpackage; sourceTree = "<group>"; };
 		1B6A59DE2963A1A6004C510D /* mel_filters.data */ = {isa = PBXFileReference; lastKnownFileType = file; path = mel_filters.data; sourceTree = "<group>"; };
 		1B6A59E02963A670004C510D /* AudioLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioLoader.swift; sourceTree = "<group>"; };
+		1BF960EB298B071300AA2990 /* MatftShapedArrayExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatftShapedArrayExtensions.swift; sourceTree = "<group>"; };
 		1BFAC9DC2968F0A900A5A099 /* WhisperTokenizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperTokenizer.swift; sourceTree = "<group>"; };
 		1BFAC9DE2968F11100A5A099 /* gpt2-merges.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "gpt2-merges.txt"; sourceTree = "<group>"; };
 		1BFAC9DF2968F11100A5A099 /* gpt2-vocab.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "gpt2-vocab.json"; sourceTree = "<group>"; };
@@ -66,6 +69,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1B58A6382975C3B1006E0969 /* RosaKit in Frameworks */,
+				1BF960EA298B063200AA2990 /* Matft in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -140,6 +144,7 @@
 				1B6A59D829634F2A004C510D /* MelSpectrogram.swift */,
 				1B58A60F296A3BAB006E0969 /* MLMultiArray+Utils.swift */,
 				1B58A60D296A3B40006E0969 /* Math.swift */,
+				1BF960EB298B071300AA2990 /* MatftShapedArrayExtensions.swift */,
 			);
 			path = Whisper;
 			sourceTree = "<group>";
@@ -162,6 +167,7 @@
 			name = Whisper;
 			packageProductDependencies = (
 				1B58A6372975C3B1006E0969 /* RosaKit */,
+				1BF960E9298B063200AA2990 /* Matft */,
 			);
 			productName = Whisper;
 			productReference = 01AF98F528E28BF2002DAC53 /* Whisper.app */;
@@ -193,6 +199,7 @@
 			mainGroup = 01AF98EC28E28BF2002DAC53;
 			packageReferences = (
 				1B58A6362975C3B1006E0969 /* XCRemoteSwiftPackageReference "RosaKit" */,
+				1BF960E8298B063200AA2990 /* XCRemoteSwiftPackageReference "Matft" */,
 			);
 			productRefGroup = 01AF98F628E28BF2002DAC53 /* Products */;
 			projectDirPath = "";
@@ -236,6 +243,7 @@
 				1B58A61C29733174006E0969 /* STFT.swift in Sources */,
 				1B03910729760795007E945E /* encoder_base.mlpackage in Sources */,
 				1B58A61A2970C127006E0969 /* FFT.swift in Sources */,
+				1BF960EC298B071300AA2990 /* MatftShapedArrayExtensions.swift in Sources */,
 				1B58A63B2975F07A006E0969 /* decoder_base.mlpackage in Sources */,
 				01AF991F28E2A97E002DAC53 /* Whisper.swift in Sources */,
 				1B58A60E296A3B40006E0969 /* Math.swift in Sources */,
@@ -476,6 +484,14 @@
 				kind = branch;
 			};
 		};
+		1BF960E8298B063200AA2990 /* XCRemoteSwiftPackageReference "Matft" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/jjjkkkjjj/Matft";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.3.2;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -483,6 +499,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 1B58A6362975C3B1006E0969 /* XCRemoteSwiftPackageReference "RosaKit" */;
 			productName = RosaKit;
+		};
+		1BF960E9298B063200AA2990 /* Matft */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1BF960E8298B063200AA2990 /* XCRemoteSwiftPackageReference "Matft" */;
+			productName = Matft;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
