@@ -75,7 +75,6 @@ struct ContentView: View {
                 .foregroundColor(.white)
         }
         .onTapGesture {
-            
             getAudioPredict(url: loader.selectFileURL())
             
         }
@@ -93,7 +92,7 @@ struct ContentView: View {
                                                                         verbose: true)
             
             let transcription = await whisper.transcribe(assetURL: url, options: options)
-            
+            print(url)
             print(transcription)
         }
     }

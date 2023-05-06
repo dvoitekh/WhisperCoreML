@@ -11,11 +11,11 @@ import Cocoa
 class AudioLoader: NSObject, ObservableObject
 {
     func selectFileURL() -> URL {
-        
+
         let openpanel = NSOpenPanel()
-        
+
         openpanel.runModal()
-        
+
         return openpanel.url!
     }
 }

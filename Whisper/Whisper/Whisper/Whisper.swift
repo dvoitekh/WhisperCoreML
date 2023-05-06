@@ -254,8 +254,8 @@ public class Whisper {
     
     // MARK: Whisper Properties
        
-    let decoderModel: decoder_base
-    let encoderModel: encoder_base
+    let decoderModel: decoder
+    let encoderModel: encoder
     let tokenizer = WhisperTokenizer()
     
     let melGenerator:MelSpectrogram = MelSpectrogram(sampleCount: kWhisperNumSamplesInChunk, hopCount: kWhisperHopLength, melCount: kWhisperNumMels, numFFT: kWhisperNumFFTs)
@@ -272,8 +272,8 @@ public class Whisper {
         let config = MLModelConfiguration()
         config.computeUnits = .all
         
-        self.decoderModel = try decoder_base(configuration: config)
-        self.encoderModel = try encoder_base(configuration: config)
+        self.decoderModel = try decoder(configuration: config)
+        self.encoderModel = try encoder(configuration: config)
         
         self.sessionAccruedAudioSamples.reserveCapacity( Whisper.kWhisperNumSamplesInChunk )
         
@@ -450,13 +450,13 @@ public class Whisper {
         let melRosa:[Float] = melGenerator.processDataRosa(audio: audio)
         let melPreProcessed = MelSpectrogram.loadReferencePythonRawMelToDebugShit()
         
-        self.saveNormalizedMelToDisk(mel: mel, url: URL(fileURLWithPath: "/Users/vade/Downloads/rawMel-normalized.raw"))
-        self.saveNormalizedMelToDisk(mel: melRosa, url: URL(fileURLWithPath: "/Users/vade/Downloads/rawMel-rosa-normalized.raw"))
-        self.saveNormalizedMelToDisk(mel: melPreProcessed, url: URL(fileURLWithPath: "/Users/vade/Downloads/rawMel-python-normalized.raw"))
+        self.saveNormalizedMelToDisk(mel: mel, url: URL(fileURLWithPath: "rawMel-normalized.raw"))
+        self.saveNormalizedMelToDisk(mel: melRosa, url: URL(fileURLWithPath: "rawMel-rosa-normalized.raw"))
+        self.saveNormalizedMelToDisk(mel: melPreProcessed, url: URL(fileURLWithPath: "rawMel-python-normalized.raw"))
 
         let array = MLShapedArray(scalars: mel, shape: [1, 80, 3000])
         
-        let encoded = try encoderModel.prediction(logmel_data:array).var_719ShapedArray
+        let encoded = try encoderModel.prediction(logmel_data:array).var_717ShapedArray
         return encoded
 //        return array
     }

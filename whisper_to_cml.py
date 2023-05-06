@@ -3,8 +3,10 @@ import numpy as np
 import torch
 import coremltools as ct
 
+from coremltools.models.neural_network import quantization_utils
+
 def load_models():
-    model = whisper.load_model("small").cpu()
+    model = whisper.load_model("base").cpu() #tiny, base, small, medium, large
     return model.encoder, model.decoder
 
 def convert_encoder_to_tvm(model):
@@ -19,6 +21,7 @@ def convert_encoder_to_tvm(model):
         convert_to="mlprogram",
         inputs=[ct.TensorType(name="logmel_data", shape=input_shape)]
     )
+    # model = quantization_utils.quantize_weights(model, nbits=16)
 
     return model
 
@@ -26,7 +29,7 @@ def convert_decoder_to_tvm(model):
     model.eval()
 
     tokens_shape = (1, 1)
-    audio_shape = (1, 1500, 768)
+    audio_shape = (1, 1500, 512) # base shape is audio_shape = (1, 1500, 512), small shape is audio_shape = (1, 1500, 768)
     token_data = torch.randn(tokens_shape).long()
     audio_data = torch.randn(audio_shape)
     traced_model = torch.jit.trace(model, (token_data, audio_data))
@@ -43,17 +46,14 @@ def convert_decoder_to_tvm(model):
             ct.TensorType(name="audio_data", shape=audio_shape)
         ]
     )
+    # model = quantization_utils.quantize_weights(model, nbits=16)
 
     return model
 
-def main():
-    encoder, decoder = load_models()
+encoder, decoder = load_models()
 
-    decoder = convert_decoder_to_tvm(decoder)
-    decoder.save("decoder.mlpackage")
+decoder = convert_decoder_to_tvm(decoder)
+decoder.save("decoder.mlpackage")
 
-    encoder = convert_encoder_to_tvm(encoder)
-    encoder.save("encoder.mlpackage")
-
-if __name__ == "__main__":
-    main()
+encoder = convert_encoder_to_tvm(encoder)
+encoder.save("encoder.mlpackage")
